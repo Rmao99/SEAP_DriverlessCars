@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 
 #cap - cv2.VideoCapture(0)
-trueWidth = 0.73
-trueHeight = 0.73
+trueWidth = 0.71
+trueHeight = 0.71
 focalLength = 1#need to measure
 def getWidth(contours):
 
