@@ -82,8 +82,8 @@ while(1):
 	if lines is not None:
 		for line in lines:
 			if line is not None:
-				for x1,x2,y1,y2 in line:
-					print x1,x2,y1,y2
+				for x1,y1,x2,y2 in line:
+					print x1,y1,x2,y2
 					if x2 == x1:
 						continue
 					slope = (y2-y1)/(x2-x1)
@@ -91,11 +91,11 @@ while(1):
 					length = np.sqrt((y2-y1)**2+(x2-x1)**2)
 					print "slope",slope
 					print "intercept", intercept
-					print "length", length
-					if slope < 0:
+					#print "length", length
+					if slope < -0.07:
 						left_lines.append((slope,intercept)) #append tuples
 						left_weights.append((length))
-					else:
+					elif slope >= 0.07:
 						right_lines.append((slope,intercept))
 						right_weights.append((length))
 
@@ -108,9 +108,9 @@ while(1):
 
 		#dot product is slope * length + intercept*0. append (length) is equivalent to appending (length,) with no 2nd element...
 
-		print "left lane:", left_lane
-		print "right lane:" , right_lane
-		print "img size:",frame.shape[0]
+		#print "left lane:", left_lane
+		#print "right lane:" , right_lane
+		#print "img size:",frame.shape[1]
 	else:
 		print "no lines found"
 		continue
@@ -127,6 +127,7 @@ while(1):
 		continue'''
 
 	y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
+
 	y2 = y1*0.6
 
 	print "left lane slope:", left_lane[0]
