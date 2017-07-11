@@ -24,6 +24,9 @@ while(1):
     
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
+	#stops2 = stop_cascade.detectMultiScale(gray, 1.4, 5)
+   	#stops3 = stop_cascade.detectMultiScale(gray, 1.5, 5)
+    
     
    
 	for (x,y,w,h) in stops:
