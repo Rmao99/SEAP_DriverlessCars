@@ -1,131 +1,218 @@
+from __future__ import division
 import cv2
 import numpy as np
+import time
+import imutils
 
-def avg_slope(lines):
+#PI VIDEO STREAM
+from imutils.video.pivideostream import PiVideoStream
+from imutils.video import FPS
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 
+
+#cap = cv2.VideoCapture(0)
+
+#THREADED PI CAM	
+vs = PiVideoStream().start()
+time.sleep(2.0)
+
+#camera = PiCamera()
+#camera.resolution = (640,480)
+#camera.framerate = 30
+#rawCapture = PiRGBArray(camera, size =(320, 240))
+
+time.sleep(0.5)
+
+def blue(img): #thresholds for blue
+	hsl = cv2.cvtColor(img,cv2.COLOR_BGR2HLS)
+
+	'''lower = np.uint8([0,200,0])
+	upper = np.uint8([255,255,255])
+	mask_w = cv2.inRange(hsl,lower,upper)
+
+	lower = np.uint8([10,0,100])
+	upper = np.uint8([40,255,255])
+	mask_y = cv2.inRange(hsl,lower,upper)
+
+	mask_wy = cv2.bitwise_or(mask_w,mask_y)
+
+	return mask_wy'''
+
+	lower = np.uint8([100,50,50])
+	upper = np.uint8([130,255,255])
+	mask = cv2.inRange(hsl,lower,upper)
+
+	return mask
+
+def applyGauss(gray):
+	return cv2.GaussianBlur(gray,(5,5),0)
+
+def ROI(cannied):
+	#select regions
+	rows, cols = frame.shape[:2] #0 to 1, rows and columns
+	# make a trapezoid b/c perspective
+	'''bot_left = [cols *0.1, rows *0.95] #small col number and large row number is bottom left
+	top_left = [cols * 0.4, rows * 0.6]
+	bot_right = [cols * 0.9, rows *0.95]
+	top_right = [cols * 0.6, rows *0.6]'''
+
+	bot_left = [0,rows]
+	top_left = [0,rows*0.5]
+	bot_right = [cols,rows]
+	top_right = [cols,rows*0.5]
+
+	verticies = np.array([[bot_left,top_left,top_right, bot_right]], dtype=np.int32)
+#filter region
+	mask = np.zeros_like(cannied)
+	if len(mask.shape) ==2: #if its a binary image
+		cv2.fillPoly(mask, verticies, 255)
+	else:
+		cv2.fillPoly(mask,verticies, (255,)*mask.shape[2])
+	
+	img = cv2.bitwise_and(cannied,mask)
+	return img
+
+def findLanes(frame, lines):
 	left_lines = []
 	left_weights = []
 	right_lines = []
 	right_weights = []
 
-	if lines is not None:
-		for line in lines:
-			if line is not None:
-				for x1,x2,y1,y2 in line:
-					if x2 == x1:
-						continue
-					slope = (y2-y1)/(x2-x1)
-					intercept = y1-slope*x1
-					length = np.sqrt((y2-y1)**2+(x2-x1)**2)
-
-					if slope < 0:
-						left_lines.append((slope,intercept)) #append tuples
-						left_weights.append(length)
-					else:
-						right_lines.append((slope,intercept))
-						right_weights.append(length)
-
-	#dot products
-	left_lane = np.dot(left_weights,left_lines)/np.sum(left_weights)
-	right_lane = np.dot(right_weights, right_lines)/np.sum(right_weights)
-
-	return left_lane,right_lane #(slope,intercept),(slope,intercept)
-
-def make_points(y1,y2,line):
-
-	if line is None:
+	cnt = 0
+	if lines is None:
+		print "no lines"
 		return None
 
-	slope, intercept = line
+	for line in lines:
+		for x1,y1,x2,y2 in line:
+			print x1,y1,x2,y2
+			if x2 == x1:
+				continue
+			slope = (y2-y1)/(x2-x1)
+			intercept = y1-slope*x1
+			length = np.sqrt((y2-y1)**2+(x2-x1)**2)
+			print "slope",slope
+			print "intercept", intercept
+			#print "length", length
+			if slope < -0.082:
+				left_lines.append((slope,intercept)) #append tuples
+				left_weights.append((length))
+			elif slope >= 0.082:
+				right_lines.append((slope,intercept))
+				right_weights.append((length))
+#dot products
+	print "left lines size:", len(left_lines)
+	print "right lines size:", len(right_lines)
 
-	x1 = int((y1-intercept)/slope)
-	x2 = int((y2-intercept)/slope)
-	y1 = int(y1)
-	y2 = int(y2)
+	left_lane = np.dot(left_weights,left_lines)/np.sum(left_weights) if len(left_weights) > 0 else None
+	right_lane = np.dot(right_weights, right_lines)/np.sum(right_weights) if len(right_weights) > 0 else None
 
-	return ((x1,y1),(x2,y2))
+	#dot product is slope * length + intercept*0. append (length) is equivalent to appending (length,) with no 2nd element...
+	if right_lane is None or left_lane is None:
+		print "missing a lane, restarting"
+		return None
 
-def make_lanes(image,lines):
-	#uses the avg slope method  
-	(left_lane, right_lane) = avg_slope(lines)
+	y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
 
-	y1=image.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
-	y2 = y1*0.6
-	#y1 is very bottom of the image (higher values of y mean lower position) and y2 is slightly below the center of the image
+	y2 = y1*0.5
 
-	left_line = make_points(y1,y2,left_lane) #turn the line equations into tuples in order to draw
-	right_line = make_points(y1,y2,right_lane)
+	print "left lane slope:", left_lane[0]
+	print "left left intercept:",left_lane[1]
+	print "y1",y1
+	print "y2",y2	
+	Lx1 = int((y1-left_lane[1])/left_lane[0])
+	Lx2 = int((y2-left_lane[1])/left_lane[0])
+	Ly1 = int(y1)
+	Ly2 = int(y2)	
 
-	return left_line,right_line
+	left_line = ((Lx1,Ly1),(Lx2,Ly2))
 
-def draw_lanes(image, lines, color = [255,0,0], thickness = 20):
+	y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
+	y2 = y1*0.5
 
-	# make a separate image and combine later side by side
-		for line in lines:	
-			if line is not None:
-				(x1,x2),(y1,y2) = line
-				cv2.line(image, (x1,y1),(x2,y2), color, thickness)			
-	#			cv2.line(frame, (x1,y1), (x2,y2), (255,0,0), 7)
-
-
-cap = cv2.VideoCapture(0)
-while(1):
-
-	_, frame = cap.read()
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	print "right lane slope:", right_lane[0]
+	print "right lane intercept:", right_lane[1]
+	print "y1",y1
+	print "y2",y2
 	
-	gauss_gray = cv2.GaussianBlur(gray,(5,5,),0)
-	cv2.imshow('frame',frame)
+	Rx1 = int((y1-right_lane[1])/right_lane[0])
+	Rx2 = int((y2-right_lane[1])/right_lane[0])
+	Ry1 = int(y1)
+	Ry2 = int(y2)	
+	right_line = ((Rx1,Ry1),(Rx2,Ry2))
 
-	cannied = cv2.Canny(gauss_gray, 50,150)
-	cv2.imshow('cannied',cannied)
+	print "left line:", left_line
+	print "right line:", right_line
+	
+	return left_line, right_line
 
-	lines = cv2.HoughLinesP(cannied,  1, np.pi/180, 35,np.array([]),minLineLength=30,maxLineGap=100)
-	cv2.imshow("lines", frame)
+def drawLines(frame,lanes):
+	left_line,right_line = lanes
+	
+	line_img = np.zeros_like(frame)
+	((x1,y1),(x2,y2)) = left_line
+	cv2.line(line_img, (x1,y1),(x2,y2), (0,255,0), 20)
+	((x1,y1),(x2,y2)) = right_line
+	cv2.line(line_img, (x1,y1),(x2,y2), (0,0,255), 20)
+	return line_img
 
-	draw_lanes(frame,make_lanes(frame,lines))
-	cv2.imshow("new lines??", frame)
+while(1):
+#for image in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+	
+	'''_, frame = cap.read()'''
+	#frame = cv2.imread('lane1.jpg')
+	#frame = cv2.resize(frame,(360,240))
+	#frame = image.array
+	#rawCapture.truncate(0)
+
+	start_time = time.time()
+	#grab the frame from the stream and resize it to have a max width of 400
+	frame = vs.read()
+	frame = imutils.resize(frame,width=400)	
+	
+	gray = blue(frame)
+	gauss_gray = applyGauss(gray)
+	cannied = cv2.Canny(gauss_gray, 55,150)
+#	cv2.imshow('cannied',cannied)
+
+#ROI
+
+	region = ROI(cannied)
+#	cv2.imshow("new frame", region)
+#HOUGH
+	lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=20,maxLineGap=300)
+	
+
+	if lines is not None:		
+		for line in lines:
+			for x1,y1,x2,y2 in line:
+				cv2.line(frame, (x1,y1), (x2,y2), (255,0,0), 7)
+#	cv2.imshow("lines", frame)
+
+
+#AVERAGE AND EXTRAPOLATION
+	lanes = findLanes(frame,lines)
+	if lanes is not None:	
+		line_img = drawLines(frame,lanes)
+		final = cv2.addWeighted(frame, 1.0, line_img, 0.95,0.0)
+#		cv2.imshow("final overlay", final)
+		#cv2.imshow("overlay", line_img)
+
+	end_time = time.time()
+	timee = end_time-start_time
+	print timee
 
 	
 	k = cv2.waitKey(5)
 	if(k==27):
 		break
 cv2.destroyAllWindows()
+vs.stop()
+'''	for line in lines:	
+		if line is not None:
+			(x1,x2),(y1,y2) = line
+			cv2.line(image, (x1,y1),(x2,y2), color, thickness)'''
 
-	#line_img = np.zeros(cannied.shape, dtype=np.uint8)
-'''	if lines is not None:		
-		for line in lines:
-			for x1,y1,x2,y2 in line:
-				cv2.line(frame, (x1,y1), (x2,y2), (255,0,0), 7)'''
+	#draw_lanes(frame,make_lanes(frame,lines))
 	
-
-	
-
-#AVG OUT#
-
-
-# if slope of left side is steeper, move  to the right,
-# if slope of right side is steeper, move to the left
-
-'''hsl = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
-
-	lower = np.uint8([0,200,0])
-	upper = np.uint8([255,255,255])
-	mask_w = cv2.inRange(hsl,lower,upper)
-
-	lower = np.uint8([15,100,100])
-	upper = np.uint8([40,255,255])
-	mask_y = cv2.inRange(hsl,lower,upper)
-
-	mask_wy = cv2.bitwise_or(mask_w,mask_y)
-	
-	final = cv2.bitwise_and(frame, frame, mask = mask_wy)
-	gauss_gray = gaussian_blur(gray,5)
-	cv2.imshow('frame',frame)
-	cv2.imshow('gray',gray)
-	cv2.imshow('final',final)
-	k = cv2.waitKey(5)
-	if(k==27):
-		break
-cv2.destroyAllWindows()'''
-
