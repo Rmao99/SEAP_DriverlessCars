@@ -143,7 +143,7 @@ def drawLines(frame,lanes):
 	((x1,y1),(x2,y2)) = left_line
 	cv2.line(line_img, (x1,y1),(x2,y2), (0,255,0), 20)
 	((x1,y1),(x2,y2)) = right_line
-	cv2.line(line_img, (x1,y1),(x2,y2), (0,0,255), 20)
+	cv2.line(line_img, (x1,y1),(x2,y2), (0,255,0), 20)
 	return line_img
 
 while(1):
@@ -151,7 +151,9 @@ while(1):
 	
 	'''_, frame = cap.read()'''
 	frame = cv2.imread('lane1.jpg')
-	frame = cv2.resize(frame,(360,240))
+	frame = cv2.resize(frame,(640,360))
+
+	cv2.imshow("Original", frame)
 	#frame = image.array
 	#rawCapture.truncate(0)	
 	
@@ -159,31 +161,30 @@ while(1):
 	gray = blue(frame)
 	gauss_gray = applyGauss(gray)
 	cannied = cv2.Canny(gauss_gray, 55,150)
-	cv2.imshow('cannied',cannied)
+	cv2.imshow('Edges',cannied)
 
 #ROI
 
 	region = ROI(cannied)
-	cv2.imshow("new frame", region)
+	cv2.imshow("Region of Interest", region)
 #HOUGH
 	lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=20,maxLineGap=300)
 	
-
+	copy= frame.copy()
 	if lines is not None:		
 		for line in lines:
 			for x1,y1,x2,y2 in line:
-				cv2.line(frame, (x1,y1), (x2,y2), (255,0,0), 7)
-	cv2.imshow("lines", frame)
+				cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
+	cv2.imshow("Hough Lines", copy)
 
 
 #AVERAGE AND EXTRAPOLATION
 	lanes = findLanes(frame,lines)
 	if lanes is not None:	
 		line_img = drawLines(frame,lanes)
-		final = cv2.addWeighted(frame, 1.0, line_img, 0.95,0.0)
-		cv2.imshow("final overlay", final)
-		#cv2.imshow("overlay", line_img)
-	
+		final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
+		cv2.imshow("Final Overlay", final)
+		
 	k = cv2.waitKey(5)
 	if(k==27):
 		break
