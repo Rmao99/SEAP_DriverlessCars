@@ -151,23 +151,23 @@ class LaneDetector:
 		cannied = cv2.Canny(gauss_gray, 55,150)
 #		cv2.imshow('Edges',cannied)
 		region = self.ROI(cannied)
-#		cv2.imshow("Region of Interest", region)
+		cv2.imshow("Region of Interest", region)
 		
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=20,maxLineGap=300)
 
-		'''copy= frame.copy()
+		copy= frame.copy()
 		if lines is not None:		
 			for line in lines:
 				for x1,y1,x2,y2 in line:
 					cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
-		cv2.imshow("Hough Lines", copy)'''
+		cv2.imshow("Hough Lines", copy)
 
 		lanes = self.findLanes(frame,lines)
 
-		'''if lanes is not None:	
-		line_img = drawLines(frame,lanes)
-		final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
-		cv2.imshow("Final Overlay", final)'''
+		if lanes is not None:	
+			line_img = drawLines(frame,lanes)
+			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
+			cv2.imshow("Final Overlay", final)
 		return lanes
 
 	def get_left_slope(self):
@@ -176,6 +176,9 @@ class LaneDetector:
 	def get_right_slope(self):
 		return self.right_slope
 
+	def reset(self):
+		self.left_slope = None
+		self.right_slope = None
 
 
 	
