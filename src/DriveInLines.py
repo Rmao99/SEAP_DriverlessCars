@@ -15,7 +15,7 @@ vs = PiVideoStream().start()
 time.sleep(2.0)
 detector = LaneDetector()
 
-fwd()
+#fwd()
 while(1):
 	
 	start_time = time.time()
@@ -24,7 +24,8 @@ while(1):
 	#frame = imutils.resize(frame,width=400)	
 
 	frame = cv2.imread("lane1_alt2")
-	frame = cv2.resize(frame,(320,240))
+	frame = imutils.resize(frame,width=320)	
+	#frame = cv2.resize(frame,(320,240))
 	detector.process(frame)
 
 	left_slope = detector.get_left_slope()
@@ -34,16 +35,20 @@ while(1):
 		print "found slopes"
 		difference = right_slope + left_slope
 		difference = int(difference)
+		
 		print "difference in slopes:", difference
-		if difference > 0.02:
-			set_right_speed(150+difference*60)
-			set_left_speed(150)			
-		elif difference < -0.02:
-			set_right_speed(150)
-			set_left_speed(150+difference*60)
+		if difference > 0.025:
+			set_right_speed(95+difference*50)
+			set_left_speed(95)	
+			fwd()		
+		elif difference < -0.025:
+			set_right_speed(95)
+			set_left_speed(95-difference*50)
+			fwd()
 		else:
-			set_right_speed(150)
-			set_left_speed(150)			
+			set_right_speed(95)
+			set_left_speed(95)
+			fwd()			
 	else:
 		print "missing a lane atm"
 	detector.reset()

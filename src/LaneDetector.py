@@ -98,8 +98,8 @@ class LaneDetector:
 			print "missing a lane, restarting"
 			return None
 
-		self.left_lane = left_lane[0]
-		self.right_lane = right_lane[0]
+		self.set_left_slope(left_lane[0])
+		self.set_right_slope(right_lane[0])
 
 		y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
 
@@ -135,7 +135,7 @@ class LaneDetector:
 	
 		return left_line, right_line
 
-	def drawLines(frame,lanes):
+	def drawLines(self,frame,lanes):
 		left_line,right_line = lanes
 	
 		line_img = np.zeros_like(frame)
@@ -146,28 +146,37 @@ class LaneDetector:
 		return line_img
 
 	def process(self, frame):
+
+		cv2.imwrite("original.png",frame)
 		gray = self.blue(frame)
+#		cv2.imshow('threshed',gray)
+		cv2.imwrite("threshed.png", gray)
 		gauss_gray = self.applyGauss(gray)
+		cv2.imwrite('blurred.png',gauss_gray)
 		cannied = cv2.Canny(gauss_gray, 55,150)
 #		cv2.imshow('Edges',cannied)
+		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
-		cv2.imshow("Region of Interest", region)
+#		cv2.imshow("Region of Interest", region)
+		cv2.imwrite("roi.png", region)
 		
-		lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=20,maxLineGap=300)
+		lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=23,maxLineGap=300)
 
 		copy= frame.copy()
 		if lines is not None:		
 			for line in lines:
 				for x1,y1,x2,y2 in line:
 					cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
-		cv2.imshow("Hough Lines", copy)
+#		cv2.imshow("Hough Lines", copy)
+		cv2.imwrite("hough.png", copy)
 
 		lanes = self.findLanes(frame,lines)
 
 		if lanes is not None:	
-			line_img = drawLines(frame,lanes)
+			line_img = self.drawLines(frame,lanes)
 			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
-			cv2.imshow("Final Overlay", final)
+#			cv2.imshow("overlay", final)
+			cv2.imwrite("overlay.png", final)
 		return lanes
 
 	def get_left_slope(self):
@@ -175,6 +184,12 @@ class LaneDetector:
 
 	def get_right_slope(self):
 		return self.right_slope
+
+	def set_left_slope(self,val):
+		self.left_slope = val
+
+	def set_right_slope(self,val):
+		self.right_slope = val
 
 	def reset(self):
 		self.left_slope = None

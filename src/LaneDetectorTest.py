@@ -25,11 +25,12 @@ time.sleep(2.0)
 #rawCapture = PiRGBArray(camera, size =(320, 240))
 
 time.sleep(0.5)
+detector = LaneDetector()
 
 while(1):
 #for image in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 
-	detector = LaneDetector()
+	
 	'''_, frame = cap.read()'''
 	#frame = cv2.imread('lane1.jpg')
 	#frame = cv2.resize(frame,(360,240))
@@ -42,6 +43,7 @@ while(1):
 	frame = imutils.resize(frame,width=400)	
 
 	detector.process(frame)
+
 	left_slope = detector.get_left_slope()
 	right_slope = detector.get_right_slope()
 	
