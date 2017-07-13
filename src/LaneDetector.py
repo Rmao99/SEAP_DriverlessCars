@@ -71,14 +71,14 @@ class LaneDetector:
 
 		for line in lines:
 			for x1,y1,x2,y2 in line:
-				print x1,y1,x2,y2
+				#print x1,y1,x2,y2
 				if x2 == x1:
 					continue
 				slope = (y2-y1)/(x2-x1)
 				intercept = y1-slope*x1
 				length = np.sqrt((y2-y1)**2+(x2-x1)**2)
-				print "slope",slope
-				print "intercept", intercept
+				#print "slope",slope
+				#print "intercept", intercept
 				#print "length", length
 				if slope < -0.082:
 					left_lines.append((slope,intercept)) #append tuples
@@ -87,8 +87,8 @@ class LaneDetector:
 					right_lines.append((slope,intercept))
 					right_weights.append((length))
 	#dot products
-		print "left lines size:", len(left_lines)
-		print "right lines size:", len(right_lines)
+		#print "left lines size:", len(left_lines)
+		#print "right lines size:", len(right_lines)
 
 		left_lane = np.dot(left_weights,left_lines)/np.sum(left_weights) if len(left_weights) > 0 else None
 		right_lane = np.dot(right_weights, right_lines)/np.sum(right_weights) if len(right_weights) > 0 else None
@@ -105,10 +105,10 @@ class LaneDetector:
 
 		y2 = y1*0.5
 
-		print "left lane slope:", left_lane[0]
-		print "left left intercept:",left_lane[1]
-		print "y1",y1
-		print "y2",y2	
+		#print "left lane slope:", left_lane[0]
+		#print "left left intercept:",left_lane[1]
+		#print "y1",y1
+		#print "y2",y2	
 		Lx1 = int((y1-left_lane[1])/left_lane[0])
 		Lx2 = int((y2-left_lane[1])/left_lane[0])
 		Ly1 = int(y1)
@@ -119,10 +119,10 @@ class LaneDetector:
 		y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
 		y2 = y1*0.5
 
-		print "right lane slope:", right_lane[0]
-		print "right lane intercept:", right_lane[1]
-		print "y1",y1
-		print "y2",y2
+		#print "right lane slope:", right_lane[0]
+		#print "right lane intercept:", right_lane[1]
+		#print "y1",y1
+		#print "y2",y2
 	
 		Rx1 = int((y1-right_lane[1])/right_lane[0])
 		Rx2 = int((y2-right_lane[1])/right_lane[0])
@@ -130,8 +130,8 @@ class LaneDetector:
 		Ry2 = int(y2)	
 		right_line = ((Rx1,Ry1),(Rx2,Ry2))
 
-		print "left line:", left_line
-		print "right line:", right_line
+		#print "left line:", left_line
+		#print "right line:", right_line
 	
 		return left_line, right_line
 
@@ -147,36 +147,37 @@ class LaneDetector:
 
 	def process(self, frame):
 
-		cv2.imwrite("original.png",frame)
+#		cv2.imshow("original", frame)
+#		cv2.imwrite("original.png",frame)
 		gray = self.blue(frame)
 #		cv2.imshow('threshed',gray)
-		cv2.imwrite("threshed.png", gray)
+#		cv2.imwrite("threshed.png", gray)
 		gauss_gray = self.applyGauss(gray)
-		cv2.imwrite('blurred.png',gauss_gray)
+#		cv2.imwrite('blurred.png',gauss_gray)
 		cannied = cv2.Canny(gauss_gray, 55,150)
 #		cv2.imshow('Edges',cannied)
-		cv2.imwrite("edges.png", cannied)
+#		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
 #		cv2.imshow("Region of Interest", region)
-		cv2.imwrite("roi.png", region)
+#		cv2.imwrite("roi.png", region)
 		
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=23,maxLineGap=300)
 
-		copy= frame.copy()
+		'''copy= frame.copy()
 		if lines is not None:		
 			for line in lines:
 				for x1,y1,x2,y2 in line:
 					cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
-#		cv2.imshow("Hough Lines", copy)
-		cv2.imwrite("hough.png", copy)
+		cv2.imshow("Hough Lines", copy)'''
+#		cv2.imwrite("hough.png", copy)
 
 		lanes = self.findLanes(frame,lines)
 
-		if lanes is not None:	
+		'''if lanes is not None:	
 			line_img = self.drawLines(frame,lanes)
 			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
-#			cv2.imshow("overlay", final)
-			cv2.imwrite("overlay.png", final)
+			cv2.imshow("overlay", final)
+#			cv2.imwrite("overlay.png", final)'''
 		return lanes
 
 	def get_left_slope(self):
