@@ -8,6 +8,9 @@ class LaneDetector:
 	def __init__(self):
 		self.left_slope = None
 		self.right_slope = None
+		self.x1 = None
+		self.x2 = None
+		self.width=None
 
 	def blue(self, img): #thresholds for blue
 		hsl = cv2.cvtColor(img,cv2.COLOR_BGR2HLS)
@@ -24,8 +27,8 @@ class LaneDetector:
 
 		return mask_wy'''
 
-		lower = np.uint8([100,50,50])
-		upper = np.uint8([130,255,255])
+		lower = np.uint8([100,50,35])
+		upper = np.uint8([130,250,250])
 		mask = cv2.inRange(hsl,lower,upper)
 
 		return mask
@@ -80,10 +83,10 @@ class LaneDetector:
 				#print "slope",slope
 				#print "intercept", intercept
 				#print "length", length
-				if slope < -0.082:
+				if slope <= -0.5:
 					left_lines.append((slope,intercept)) #append tuples
 					left_weights.append((length))
-				elif slope >= 0.082:
+				elif slope >= 0.5:
 					right_lines.append((slope,intercept))
 					right_weights.append((length))
 	#dot products
@@ -102,7 +105,8 @@ class LaneDetector:
 		self.set_right_slope(right_lane[0])
 
 		y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
-
+		self.set_width(frame.shape[1])
+		
 		y2 = y1*0.5
 
 		#print "left lane slope:", left_lane[0]
@@ -115,6 +119,8 @@ class LaneDetector:
 		Ly2 = int(y2)	
 
 		left_line = ((Lx1,Ly1),(Lx2,Ly2))
+
+		self.set_x1(Lx1)
 
 		y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
 		y2 = y1*0.5
@@ -129,6 +135,8 @@ class LaneDetector:
 		Ry1 = int(y1)
 		Ry2 = int(y2)	
 		right_line = ((Rx1,Ry1),(Rx2,Ry2))
+
+		self.set_x2(Rx1)		
 
 		#print "left line:", left_line
 		#print "right line:", right_line
@@ -147,10 +155,10 @@ class LaneDetector:
 
 	def process(self, frame):
 
-#		cv2.imshow("original", frame)
+		cv2.imshow("original", frame)
 #		cv2.imwrite("original.png",frame)
 		gray = self.blue(frame)
-#		cv2.imshow('threshed',gray)
+		cv2.imshow('threshed',gray)
 #		cv2.imwrite("threshed.png", gray)
 		gauss_gray = self.applyGauss(gray)
 #		cv2.imwrite('blurred.png',gauss_gray)
@@ -158,26 +166,26 @@ class LaneDetector:
 #		cv2.imshow('Edges',cannied)
 #		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
-#		cv2.imshow("Region of Interest", region)
+		cv2.imshow("Region of Interest", region)
 #		cv2.imwrite("roi.png", region)
 		
-		lines = cv2.HoughLinesP(region,  1, np.pi/180, 25,minLineLength=23,maxLineGap=300)
+		lines = cv2.HoughLinesP(region,  1, np.pi/180, 20,minLineLength=15,maxLineGap=300)
 
-		'''copy= frame.copy()
+		copy= frame.copy()
 		if lines is not None:		
 			for line in lines:
 				for x1,y1,x2,y2 in line:
 					cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
-		cv2.imshow("Hough Lines", copy)'''
+		cv2.imshow("Hough Lines", copy)
 #		cv2.imwrite("hough.png", copy)
 
 		lanes = self.findLanes(frame,lines)
 
-		'''if lanes is not None:	
+		if lanes is not None:	
 			line_img = self.drawLines(frame,lanes)
 			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
 			cv2.imshow("overlay", final)
-#			cv2.imwrite("overlay.png", final)'''
+#			cv2.imwrite("overlay.png", final)
 		return lanes
 
 	def get_left_slope(self):
@@ -192,10 +200,27 @@ class LaneDetector:
 	def set_right_slope(self,val):
 		self.right_slope = val
 
+	def get_x1(self):
+		return self.x1
+
+	def get_x2(self):
+		return self.x2
+
+	def set_x1(self,val):
+		self.x1 = val
+
+	def set_x2(self,val):
+		self.x2 = val
+
+	def get_width(self):
+		print "frame Width", self.width
+		return self.width
+
+	def set_width(self,val):
+		self.width = val
+
 	def reset(self):
 		self.left_slope = None
 		self.right_slope = None
-
-
-	
-
+		self.x1=None
+		self.x2=None

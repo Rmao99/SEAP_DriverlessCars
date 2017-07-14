@@ -27,11 +27,43 @@ while(1):
 	frame = imutils.resize(frame,width=320)	
 	#frame = cv2.resize(frame,(320,240))
 	detector.process(frame)
+	width = detector.get_width()
+#	left_slope = detector.get_left_slope()
+#	right_slope = detector.get_right_slope()
+	
+	x1 = detector.get_x1()
+	x2 = detector.get_x2()
+	print "x1:",  x1
+	print "x2:", x2
+	
+	if x1 is not None and x2 is not None:
+		print "found x coordinates"
+		avg = (x2+x1)/2
+		width = width/2
+		difference = avg-width
+		print difference
+		if difference > 25:
+			print "Setting left to 50"
+			set_right_speed(48)
+			set_left_speed(45)
+			fwd()
+		elif difference < -25:
+			print "Setting right to 50" 
+			set_left_speed(48)
+			set_right_speed(45)
+			fwd()
+		else:
+			print "Same spd"
+			set_right_speed(45)
+			set_left_speed(45)
+			fwd()
+	else:
+		print "Didn't find anything"
+		stop()
 
-	left_slope = detector.get_left_slope()
-	right_slope = detector.get_right_slope()
 		
-	if left_slope is not None and right_slope is not None:
+		
+	'''if left_slope is not None and right_slope is not None:
 		print "found slopes"
 		difference = right_slope + left_slope
 		if difference > 0.1428:
@@ -57,10 +89,11 @@ while(1):
 			print "Same speed"
 			set_right_speed(45)
 			set_left_speed(45)
-			fwd()			
+			fwd()		
 	else:
 		print "missing a lane atm, stopping"
-		stop()
+		stop()'''
+
 	detector.reset()
 	k = cv2.waitKey(5)
 	if(k==27):
