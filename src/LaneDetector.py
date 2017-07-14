@@ -12,7 +12,7 @@ class LaneDetector:
 		self.x2 = None
 		self.width=None
 
-	def blue(self, img): #thresholds for blue
+	def blue(self, img): #thresholds fedor blue
 		hsl = cv2.cvtColor(img,cv2.COLOR_BGR2HLS)
 
 		'''lower = np.uint8([0,200,0])
@@ -83,10 +83,10 @@ class LaneDetector:
 				#print "slope",slope
 				#print "intercept", intercept
 				#print "length", length
-				if slope <= -0.5:
+				if slope <= -0.4:
 					left_lines.append((slope,intercept)) #append tuples
 					left_weights.append((length))
-				elif slope >= 0.5:
+				elif slope >= 0.4:
 					right_lines.append((slope,intercept))
 					right_weights.append((length))
 	#dot products
@@ -97,65 +97,92 @@ class LaneDetector:
 		right_lane = np.dot(right_weights, right_lines)/np.sum(right_weights) if len(right_weights) > 0 else None
 
 		#dot product is slope * length + intercept*0. append (length) is equivalent to appending (length,) with no 2nd element...
-		if right_lane is None or left_lane is None:
-			print "missing a lane, restarting"
-			return None
-
-		self.set_left_slope(left_lane[0])
-		self.set_right_slope(right_lane[0])
-
-		y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
-		self.set_width(frame.shape[1])
 		
-		y2 = y1*0.5
 
-		#print "left lane slope:", left_lane[0]
-		#print "left left intercept:",left_lane[1]
-		#print "y1",y1
-		#print "y2",y2	
-		Lx1 = int((y1-left_lane[1])/left_lane[0])
-		Lx2 = int((y2-left_lane[1])/left_lane[0])
-		Ly1 = int(y1)
-		Ly2 = int(y2)	
+		y1=frame.shape[0]#image.shape returns the height,width, and channels (for binary images, returns just height,width)
+		self.set_width(frame.shape[1])
 
-		left_line = ((Lx1,Ly1),(Lx2,Ly2))
+		if right_lane is not None and left_lane is not None:
+			print "found 2 lanes"
+			self.set_left_slope(left_lane[0])
+			self.set_right_slope(right_lane[0])
 
-		self.set_x1(Lx1)
-
-		y1=frame.shape[0] #image.shape returns the height,width, and channels (for binary images, returns just height,width)
-		y2 = y1*0.5
-
-		#print "right lane slope:", right_lane[0]
-		#print "right lane intercept:", right_lane[1]
-		#print "y1",y1
-		#print "y2",y2
+			y2 = y1*0.5
+			Lx1 = int((y1-left_lane[1])/left_lane[0])
+			Lx2 = int((y2-left_lane[1])/left_lane[0])
+			Ly1 = int(y1)
+			Ly2 = int(y2)	
+			left_line = ((Lx1,Ly1),(Lx2,Ly2))
+			self.set_x1(Lx1)
 	
-		Rx1 = int((y1-right_lane[1])/right_lane[0])
-		Rx2 = int((y2-right_lane[1])/right_lane[0])
-		Ry1 = int(y1)
-		Ry2 = int(y2)	
-		right_line = ((Rx1,Ry1),(Rx2,Ry2))
+			y2 = y1*0.5
+			Rx1 = int((y1-right_lane[1])/right_lane[0])
+			Rx2 = int((y2-right_lane[1])/right_lane[0])
+			Ry1 = int(y1)
+			Ry2 = int(y2)	
+			right_line = ((Rx1,Ry1),(Rx2,Ry2))
+			self.set_x2(Rx1)	
+			return left_line, right_line
+		elif right_lane is None and left_lane is not None:
+			print "found left lane"
+			self.set_left_slope(left_lane[0])
+			self.set_right_slope(None)
 
-		self.set_x2(Rx1)		
+			y2 = y1*0.5
+			Lx1 = int((y1-left_lane[1])/left_lane[0])
+			Lx2 = int((y2-left_lane[1])/left_lane[0])
+			Ly1 = int(y1)
+			Ly2 = int(y2)	
+			left_line = ((Lx1,Ly1),(Lx2,Ly2))
+			right_line = None
+			self.set_x1(Lx1)
+			self.set_x2(None)
+			return left_line, right_line
+		elif left_lane is None and right_lane is not None:
+			print "found right lane"
+			self.set_left_slope(None)
+			self.set_right_slope(right_lane[0])	
 
-		#print "left line:", left_line
-		#print "right line:", right_line
-	
-		return left_line, right_line
+			y2 = y1*0.5
+			Rx1 = int((y1-right_lane[1])/right_lane[0])
+			Rx2 = int((y2-right_lane[1])/right_lane[0])
+			Ry1 = int(y1)
+			Ry2 = int(y2)	
+			right_line = ((Rx1,Ry1),(Rx2,Ry2))
+			left_line = None
+			self.set_x2(Rx1)		
+			self.set_x1(None)
+			return left_line, right_line
+		else:
+			self.set_left_slope(None)
+			self.set_right_slope(None)
+			self.set_x2(None)
+			self.set_x1(None)
+			return None	
 
 	def drawLines(self,frame,lanes):
 		left_line,right_line = lanes
-	
 		line_img = np.zeros_like(frame)
-		((x1,y1),(x2,y2)) = left_line
-		cv2.line(line_img, (x1,y1),(x2,y2), (0,255,0), 20)
-		((x1,y1),(x2,y2)) = right_line
-		cv2.line(line_img, (x1,y1),(x2,y2), (0,0,255), 20)
-		return line_img
-
+		if left_line is not None and right_line is not None:
+			((x1,y1),(x2,y2)) = left_line
+			cv2.line(line_img, (x1,y1),(x2,y2), (0,255,0), 20)
+			((x1,y1),(x2,y2)) = right_line
+			cv2.line(line_img, (x1,y1),(x2,y2), (0,0,255), 20)
+			return line_img
+		elif left_line is None and right_line is not None:
+			((x1,y1),(x2,y2)) = right_line
+			cv2.line(line_img, (x1,y1),(x2,y2), (0,0,255), 20)
+			return line_img
+		elif right_line is None and left_line is not None:
+			((x1,y1),(x2,y2)) = left_line
+			cv2.line(line_img, (x1,y1),(x2,y2), (0,255,0), 20)
+			return line_img
+		else:
+			return line_img
+		
 	def process(self, frame):
 
-		cv2.imshow("original", frame)
+#		cv2.imshow("original", frame)
 #		cv2.imwrite("original.png",frame)
 		gray = self.blue(frame)
 		cv2.imshow('threshed',gray)
@@ -166,7 +193,7 @@ class LaneDetector:
 #		cv2.imshow('Edges',cannied)
 #		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
-		cv2.imshow("Region of Interest", region)
+#		cv2.imshow("Region of Interest", region)
 #		cv2.imwrite("roi.png", region)
 		
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 20,minLineLength=15,maxLineGap=300)
@@ -179,12 +206,12 @@ class LaneDetector:
 		cv2.imshow("Hough Lines", copy)
 #		cv2.imwrite("hough.png", copy)
 
-		lanes = self.findLanes(frame,lines)
+		lanes = self.findLanes(cannied,lines)
 
-		if lanes is not None:	
+		'''if lanes is not None:	
 			line_img = self.drawLines(frame,lanes)
 			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
-			cv2.imshow("overlay", final)
+			cv2.imshow("overlay", final)'''
 #			cv2.imwrite("overlay.png", final)
 		return lanes
 

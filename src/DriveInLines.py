@@ -15,6 +15,7 @@ vs = PiVideoStream().start()
 time.sleep(2.0)
 detector = LaneDetector()
 
+cnt = 0
 #fwd()
 while(1):
 	
@@ -28,8 +29,8 @@ while(1):
 	#frame = cv2.resize(frame,(320,240))
 	detector.process(frame)
 	width = detector.get_width()
-#	left_slope = detector.get_left_slope()
-#	right_slope = detector.get_right_slope()
+	left_slope = detector.get_left_slope()
+	right_slope = detector.get_right_slope()
 	
 	x1 = detector.get_x1()
 	x2 = detector.get_x2()
@@ -57,11 +58,28 @@ while(1):
 			set_right_speed(45)
 			set_left_speed(45)
 			fwd()
+	elif x1 is None and x2 is not None:
+		stop()
+		cnt+=1
+		print "No left lane, continue driving"
+		enable_encoders()
+		enc_tgt(1,1,44)
+		fwd()
+		time.sleep(10)
+		print "sleeping for: ", cnt
+	elif x2 is None and x1 is not None:
+		stop()
+		cnt+=1
+		print "No right lane, continue driving"
+		enable_encoders()
+		enc_tgt(1,1,44)
+		fwd()
+		time.sleep(10)
+		print "sleeping for: ", cnt
 	else:
 		print "Didn't find anything"
 		stop()
-
-		
+	
 		
 	'''if left_slope is not None and right_slope is not None:
 		print "found slopes"
