@@ -185,7 +185,7 @@ class LaneDetector:
 #		cv2.imshow("original", frame)
 #		cv2.imwrite("original.png",frame)
 		gray = self.blue(frame)
-		cv2.imshow('threshed',gray)
+#		cv2.imshow('threshed',gray)
 #		cv2.imwrite("threshed.png", gray)
 		gauss_gray = self.applyGauss(gray)
 #		cv2.imwrite('blurred.png',gauss_gray)
@@ -199,11 +199,11 @@ class LaneDetector:
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 20,minLineLength=15,maxLineGap=300)
 
 		copy= frame.copy()
-		if lines is not None:		
+		'''if lines is not None:		
 			for line in lines:
 				for x1,y1,x2,y2 in line:
 					cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
-		cv2.imshow("Hough Lines", copy)
+		cv2.imshow("Hough Lines", copy)'''
 #		cv2.imwrite("hough.png", copy)
 
 		lanes = self.findLanes(cannied,lines)
@@ -240,7 +240,6 @@ class LaneDetector:
 		self.x2 = val
 
 	def get_width(self):
-		print "frame Width", self.width
 		return self.width
 
 	def set_width(self,val):

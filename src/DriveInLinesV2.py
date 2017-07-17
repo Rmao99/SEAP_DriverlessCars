@@ -91,9 +91,9 @@ while(1):
 		difference = avg-width
 
 		power = PIDController.compute(difference)
-		print "difference in x:", difference
+#		print "difference in x:", difference
 		if difference <= 0:
-			diff =int(45-power)
+			diff =int(45+power)
 			print "Setting right to: ",diff
 			set_left_speed(diff)
 			set_right_speed(45)	
