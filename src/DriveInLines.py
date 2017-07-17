@@ -2,7 +2,8 @@ from imutils.video.pivideostream import PiVideoStream
 from imutils.video import FPS
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-from LaneDetector import LaneDetector
+from LaneDetector import *
+from State import *
 from gopigo import *
 
 import time
@@ -14,9 +15,8 @@ import sys
 vs = PiVideoStream().start()
 time.sleep(2.0)
 detector = LaneDetector()
-
+state = State.STRAIGHT
 cnt = 0
-#fwd()
 while(1):
 	
 	start_time = time.time()
@@ -37,49 +37,54 @@ while(1):
 	print "x1:",  x1
 	print "x2:", x2
 	
-	if x1 is not None and x2 is not None:
-		print "found x coordinates"
-		avg = (x2+x1)/2
-		width = width/2
-		difference = avg-width
-		print difference
-		if difference > 25:
-			print "Setting left to 50"
-			set_right_speed(48)
-			set_left_speed(45)
-			fwd()
-		elif difference < -25:
-			print "Setting right to 50" 
-			set_left_speed(48)
-			set_right_speed(45)
-			fwd()
+	if state == State.STRAIGHT:
+		if x1 is not None and x2 is not None:
+			print "found x coordinates"
+			avg = (x2+x1)/2
+			width = width/2
+			difference = avg-width
+			print difference
+			if difference > 25:
+				print "Setting left to 50"
+				set_right_speed(48)
+				set_left_speed(45)
+				fwd()
+			elif difference < -25:
+				print "Setting right to 50" 
+				set_left_speed(48)
+				set_right_speed(45)
+				fwd()
+			else:
+				print "Same spd"
+				set_right_speed(45)
+				set_left_speed(45)
+				fwd()
+		elif x1 is None and x2 is not None:
+			stop()
+			state = State.TURN_LEFT
+			print "No left lane, time to turn"
+		elif x2 is None and x1 is not None:
+			stop()
+			state = State.TURN_RIGHT
+			print "No right lane, time to turn"
 		else:
-			print "Same spd"
-			set_right_speed(45)
-			set_left_speed(45)
+			print "Didn't find anything"
+			stop()
+			state=State.STOP
+	elif state == State.TURN_LEFT:
+			stop()			
+			enable_encoders()
+			enc_tgt(1,1,46)
 			fwd()
-	elif x1 is None and x2 is not None:
-		stop()
-		cnt+=1
-		print "No left lane, continue driving"
-		enable_encoders()
-		enc_tgt(1,1,44)
-		fwd()
-		time.sleep(10)
-		print "sleeping for: ", cnt
-	elif x2 is None and x1 is not None:
-		stop()
-		cnt+=1
-		print "No right lane, continue driving"
-		enable_encoders()
-		enc_tgt(1,1,44)
-		fwd()
-		time.sleep(10)
-		print "sleeping for: ", cnt
-	else:
-		print "Didn't find anything"
-		stop()
-	
+			while read_enc_status():
+				time.sleep(0.1)
+			enc_tgt(0,1,24)
+			set_left_speed(140)
+			right()
+			while read_enc_status():
+				time.sleep(0.1)
+			disable_encoders()
+			state = State.STRAIGHT
 		
 	'''if left_slope is not None and right_slope is not None:
 		print "found slopes"
