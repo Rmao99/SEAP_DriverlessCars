@@ -7,7 +7,7 @@ import imutils
 class PIDController:
 	def __init__(self):
 		self.Kp = 0.065
-		self.Kd = -0.025
+		self.Kd = -0.035
 		self.Ki = 0.016
 		self.setPoint = 0
 		self.previousError = 0
