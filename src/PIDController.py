@@ -6,9 +6,9 @@ import imutils
 
 class PIDController:
 	def __init__(self):
-		self.Kp = 0.065
-		self.Kd = -0.035
-		self.Ki = 0.016
+		self.Kp = 1.2
+		self.Kd = 0.15
+		self.Ki = 0
 		self.setPoint = 0
 		self.previousError = 0
 		self.previousTime = None
@@ -27,11 +27,14 @@ class PIDController:
 		if self.previousTime is None:
 			self.previousTime = time.time()
 
+		currTime = time.time()
+		timeChange = time.time() - self.previousTime
+
 		error = measuredVal
 		print "error", error				
 		print "previous error:",self.getPreviousError()
 		
-		derivative = error - self.previousError
+		derivative = (error - self.previousError) / timeChange
 		print "derivative", derivative
 		self.setPreviousError(error)
 
@@ -48,6 +51,6 @@ class PIDController:
 	
 		output = self.Kp*error + self.Kd*derivative + self.Ki*self.integral
 		print "output", output
-		return abs(output)
+		return output
 	
 	

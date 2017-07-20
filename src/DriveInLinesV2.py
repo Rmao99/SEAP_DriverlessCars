@@ -60,7 +60,7 @@ while(1):
 	print "x1:",  x1
 	print "x2:", x2
 
-	if state == State.STRAIGHT:
+	if state == State.STRAIGHT or state == State.TURN_RIGHT:
 		if x1 is not None and x2 is not None:
 			print "found x"
 			avg = (x2+x1)/2
@@ -69,7 +69,7 @@ while(1):
 
 			power = PIDController.compute(difference)
 	#		print "difference in x:", difference
-			DrivePID(difference,power)
+			DrivePID(difference,abs(power))
 		elif x1 is None and x2 is not None:
 			stop()
 			state = State.TURN_LEFT
@@ -86,6 +86,7 @@ while(1):
 			enable_encoders()
 			enc_tgt(1,1,46)
 			while read_enc_status():
+				print state
 				frame = vs.read()
 				frame = imutils.resize(frame,width=320)	
 				detector.process(frame)
@@ -94,16 +95,25 @@ while(1):
 				if x2 is None:
 					continue
 
-				difference = x2-272 #272 is x coord or approximate center
+				difference = x2-274 #274 is x coord or approximate center
 				power = PIDController.compute(difference)
 
-				DrivePID(difference,power)
+				DrivePID(difference,abs(power))
 			stop()
-			enc_tgt(0,1,24)
-			set_left_speed(140)
-			right()
-			while read_enc_status():
-				time.sleep(0.1)
+			set_speed(50)
+			frame = vs.read()
+			frame = imutils.resize(frame,width=320)
+			detector.process(frame)
+			x1 = detector.get_x1()
+			x2 = detector.get_x2()
+			while x1 or x2 is None:
+				print state
+				right_rot()
+				frame = vs.read()
+				frame = imutils.resize(frame,width=320)
+				detector.process(frame)
+				x1 = detector.get_x1()
+				x2 = detector.get_x2()
 			disable_encoders()
 			state = State.STRAIGHT
 			stop()			
@@ -114,6 +124,3 @@ while(1):
 		break
 cv2.destroyAllWindows()
 vs.stop()
-
-
-ccc
