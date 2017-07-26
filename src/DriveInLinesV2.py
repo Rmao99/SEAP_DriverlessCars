@@ -39,6 +39,10 @@ def DrivePID(difference,power):
 		set_right_speed(45)
 		set_left_speed(45)
 		fwd()
+
+
+stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
+one_cascade = cv2.CascadeClassifier("oneway_classifier.xml")
 PIDController = PIDController()
 while(1):
 	
@@ -64,6 +68,16 @@ while(1):
 		print "found x"
 		print x1
 		print x2
+
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
+		ones = one_cascade.detectMultiScale(gray,1.3,6)
+
+		if len(stops) > 1 or len(ones) > 1:
+			print "ey lmao"
+		else:
+			print "no stops or ones found"
+
 		avg = (x2+x1)/2
 		width = width/2
 		difference = width-avg
@@ -91,7 +105,7 @@ while(1):
 			continue'''
 
 		enable_encoders()
-		enc_tgt(1,1,50)
+		enc_tgt(1,1,40)
 		while read_enc_status():
 			frame = vs.read()
 			frame = imutils.resize(frame,width=320)	
@@ -100,12 +114,20 @@ while(1):
 			x2 = detector.get_x2()
 			print x2
 			if x2 is None:
-				continue
+				stop()
+				time.sleep(1.0)
+				disable_encoders()
+				enable_encoders()
+				enc_tgt(1,1,18)
+				while read_enc_status():
+					fwd()
+				disable_encoders()
+				break	
 
-			difference = 274-x2 #274 is x coord or approximate center
-			power = PIDController.compute(274,x2)
+			difference = 345-x2 #274 is x coord or approximate center
+			power = PIDController.compute(345,x2)
 			DrivePID(difference,abs(power))
-		
+		print "just broke"
 		stop()
 		disable_encoders()
 
@@ -115,6 +137,7 @@ while(1):
 		detector.process(frame)
 		x1 = detector.get_x1()
 		x2 = detector.get_x2()
+
 		if x1 is not None and x2 is not None:
 			enable_encoders()
 			enc_tgt(1,1,18)
@@ -127,19 +150,17 @@ while(1):
 				print x2
 				if x2 is None:
 					continue
-
-				difference = 274-x2 #274 is x coord or approximate center
-				power = PIDController.compute(274,x2)
+				difference = 345-x2 #274 is x coord or approximate center
+				power = PIDController.compute(345,x2)
 				DrivePID(difference,abs(power))
-		
-		set_speed(50)
-		enc_tgt(1,1,18)
+		enable_encoders()
+		set_speed(68)
+		enc_tgt(1,1,8)
 		while read_enc_status():
 			print "in reading encorder status"
 			right_rot()
-		disable_encoders()
-		stop()			
-		time.sleep(1.0)
+		stop()		
+		disable_encoders()	
 		
 	elif x2 is None and x1 is not None:
 		stop()

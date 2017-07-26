@@ -34,7 +34,7 @@ class PIDController:
 		error = setpoint-measuredVal
 
 		if self.previousError is None:
-			self.setPreviousError(error)
+			self.setPreviousError(0)
 			
 
 		print "error", error				
@@ -56,6 +56,12 @@ class PIDController:
 		print "derivative val:", self.Kd*derivative
 	
 		output = self.Kp*error + self.Kd*derivative + self.Ki*self.integral
+
+		if output > 20:
+			output = 20
+		elif output < -20:
+			output = -20
+		
 		print "output", output
 		return output
 	
