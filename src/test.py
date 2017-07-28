@@ -9,9 +9,6 @@ from imutils.video import FPS
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 
-
-vs = PiVideoStream().start()
-time.sleep(2.0)
 stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
 while(1):
 

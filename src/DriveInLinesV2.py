@@ -34,20 +34,28 @@ def DrivePID(difference,power):
 		set_left_speed(45)
 		set_right_speed(diff)
 		fwd()
-	else:
-		print "Same speed"
-		set_right_speed(45)
-		set_left_speed(45)
+	
+def DrivePIDSlow(difference,power):
+	if difference >= 0:
+		diff =int(30+power*0.88)
+		print "Setting right to: ",diff
+		set_left_speed(diff)
+		set_right_speed(30)	
+		fwd()		
+	elif difference < 0:
+		diff = int(30+power*0.88)
+		print "Setting left to:", diff
+		set_left_speed(30)
+		set_right_speed(diff)
 		fwd()
-
 
 stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
 one_cascade = cv2.CascadeClassifier("oneway_classifier.xml")
 PIDController = PIDController()
+dist = None
 while(1):
 	
 	start_time = time.time()
-	#grab the frame from the stream and resize it to have a max width of 400
 	frame = vs.read()
 	#frame = imutils.resize(frame,width=400)	
 
@@ -72,9 +80,67 @@ while(1):
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 		ones = one_cascade.detectMultiScale(gray,1.3,6)
+		print "num of stops signs found",len(stops)
+		if len(stops) > 0: #or len(ones) > 1:
+			print "Find Stop"
+			time.sleep(3.0)
+			dist = 1000
+			
+			while (dist > 9):
+					print dist
+					frame = vs.read()
+					frame = imutils.resize(frame,width=320)	
+					detector.process(frame)
+					width = 320
+					left_slope = detector.get_left_slope()
+					right_slope = detector.get_right_slope()
+	
+					x1 = detector.get_x1()
+					x2 = detector.get_x2()
+					print "x1:",  x1
+					print "x2:", x2
 
-		if len(stops) > 1 or len(ones) > 1:
-			print "ey lmao"
+					avg = (x2+x1)/2
+					width = width/2
+					difference = width-avg
+					power = PIDController.compute(width,avg)
+					DrivePIDSlow(difference,abs(power))
+					stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
+					for (x,y,w,h) in stops:
+						print "found somethin"
+						cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
+						width = w
+						dist = calcDistance(width)
+						print dist
+			
+			enable_encoders()
+			enc_tgt(1,1,40)
+			while read_enc_status():
+				frame = vs.read()
+				frame = imutils.resize(frame,width=320)	
+				detector.process(frame)
+				x1 = detector.get_x1()
+				x2 = detector.get_x2()
+				if x1 is None and x2 is None:
+					fwd()
+				elif x1 is None and x2 is not None:
+					difference = 345-x2 #274 is x coord or approximate center
+					power = PIDController.compute(345,x2)
+					DrivePID(difference,abs(power))
+				elif x1 is not None and x2 is None:
+					difference = 60-x1 #274 is x coord or approximate center
+					power = PIDController.compute(60,x1)
+					DrivePID(difference,abs(power))
+			disable_encoders()
+			enable_encoders()
+			set_speed(68)
+			enc_tgt(1,1,8)
+			while read_enc_status():
+				print "in reading encorder status"
+				left_rot()
+			stop()		
+			disable_encoders()	
+			break			
 		else:
 			print "no stops or ones found"
 
