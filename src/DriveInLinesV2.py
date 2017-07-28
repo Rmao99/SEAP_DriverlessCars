@@ -40,13 +40,13 @@ def DrivePID(difference,power):
 	
 def DrivePIDSlow(difference,power):
 	if difference >= 0:
-		diff =int(30+power*0.88)
+		diff =int(35+power*0.77)
 		print "Setting right to: ",diff
 		set_left_speed(diff)
 		set_right_speed(30)	
 		fwd()		
 	elif difference < 0:
-		diff = int(30+power*0.88)
+		diff = int(35+power*0.77)
 		print "Setting left to:", diff
 		set_left_speed(30)
 		set_right_speed(diff)
@@ -62,6 +62,70 @@ def adjust_gamma(frame,gamma=1.0):
 	table = np.array([((i/255.0)**invGamma)*255
 		for i in np.arange(0,256)]).astype("uint8")
 	return cv2.LUT(frame,table)
+
+def driveForwardSlow(frame):
+	frame = imutils.resize(frame,width=320)	
+	detector.process(frame)
+	width = 320
+	left_slope = detector.get_left_slope()
+	right_slope = detector.get_right_slope()
+	
+	x1 = detector.get_x1()
+	x2 = detector.get_x2()
+	print "x1:",  x1
+	print "x2:", x2
+
+	if x1 is not None and x2 is not None:
+		avg = (x2+x1)/2
+		width = width/2
+		difference = width-avg
+		power = PIDController.compute(width,avg)
+		DrivePIDSlow(difference,abs(power))
+	elif x1 is None and x2 is not None:
+		difference = 345-x2
+		power = PIDController.compute(345,x2)
+		DrivePIDSlow(difference,abs(power))
+	elif x1 is not None and x2 is None:
+		difference = -35-x1
+		power = PIDController.compute(-35,x1)
+		DrivePIDSlow(difference,abs(power))
+	else:
+		fwd()
+
+def driveEncoderCount(count):
+	enable_encoders()
+	enc_tgt(1,1,count)
+	while read_enc_status():
+		frame = vs.read()
+		frame = imutils.resize(frame,width=320)	
+		detector.process(frame)
+		width = 320
+		left_slope = detector.get_left_slope()
+		right_slope = detector.get_right_slope()
+	
+		x1 = detector.get_x1()
+		x2 = detector.get_x2()
+		print "x1:",  x1
+		print "x2:", x2
+
+		if x1 is not None and x2 is not None:
+			avg = (x2+x1)/2
+			width = width/2
+			difference = width-avg
+			power = PIDController.compute(width,avg)
+			DrivePID(difference,abs(power))
+		elif x1 is None and x2 is not None:
+			difference = 345-x2
+			power = PIDController.compute(345,x2)
+			DrivePID(difference,abs(power))
+		elif x1 is not None and x2 is None:
+			difference = -35-x1
+			power = PIDController.compute(-35,x1)
+			DrivePID(difference,abs(power))
+		else:
+			fwd()
+	disable_encoders()
+	
 
 stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
 one_cascade = cv2.CascadeClassifier("oneway_classifier.xml")
@@ -98,50 +162,39 @@ while(1):
 		stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 		ones = one_cascade.detectMultiScale(gray,1.3,6)
 		print "num of stops signs found",len(stops)
+		dist = None
 		if len(stops) > 0: #or len(ones) > 1:
 			print "Found Stop"
 			stop()
-			time.sleep(3.0)
-			for (x,y,w,h) in stops:
-						print "found somethin"
-						cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
-						width = w
-						dist = calcDistance(width)
-						print dist
+			time.sleep(3.0)			
 			
-			enable_encoders()
-			enc_tgt(1,1,56)
-			while read_enc_status():
+			for (x,y,w,h) in stops:
+				print "found somethin"
+				width = w
+				dist = calcDistance(width)
+				print "DISTANCE",dist
+			print dist
+			while dist > 16:
+				frame = vs.read()	
+				driveForwardSlow(frame)	
+				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+				gray = (gray*0.3).astype(np.uint8)	
+				gray = adjust_gamma(gray,0.4)
+				stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
+				for (x,y,w,h) in stops:
+					print "found somethin"
+					#cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
+					width = w
+					dist = calcDistance(width)
+					print "DISTANCE",dist
 				print dist
-				frame = vs.read()
-				frame = imutils.resize(frame,width=320)	
-				detector.process(frame)
-				width = 320
-				left_slope = detector.get_left_slope()
-				right_slope = detector.get_right_slope()
-	
-				x1 = detector.get_x1()
-				x2 = detector.get_x2()
-				print "x1:",  x1
-				print "x2:", x2
-
-				if x1 is not None and x2 is not None:
-					avg = (x2+x1)/2
-					width = width/2
-					difference = width-avg
-					power = PIDController.compute(width,avg)
-					DrivePID(difference,abs(power))
-				elif x1 is None and x2 is not None:
-					difference = 345-x2
-					power = PIDController.compute(345,x2)
-					DrivePID(difference,abs(power))
-				elif x1 is not None and x2 is None:
-					difference = -35-x1
-					power = PIDController.computer(0,x1)
-					DrivePID(difference,abs(power))
-				else:
-					fwd()
-			disable_encoders()
+			print "______________________EXITING WHILE ______________________"
+			stop()
+			time.sleep(2.0)			
+			driveEncoderCount(38)
+			stop()
+			time.sleep(2.0)
+			driveEncoderCount(18)
 			enable_encoders()
 			set_speed(68)
 			enc_tgt(1,1,8)
@@ -150,7 +203,7 @@ while(1):
 				left_rot()
 			stop()		
 			disable_encoders()	
-			break			
+			continue			 
 				
 			'''		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 					gray = (gray*0.3).astype(np.uint8)	
@@ -198,10 +251,8 @@ while(1):
 			avg = (x2+x1)/2
 			width = width/2
 			difference = width-avg
-
-		power = PIDController.compute(width,avg)
-	#	print "difference in x:", difference
-		DrivePID(difference,abs(power))
+			power = PIDController.compute(width,avg)
+			DrivePID(difference,abs(power))
 	elif x1 is None and x2 is not None:
 		print "No left lane, time to turn"		
 		stop()		

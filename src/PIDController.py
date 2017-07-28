@@ -36,7 +36,6 @@ class PIDController:
 		if self.previousError is None:
 			self.setPreviousError(0)
 			
-
 		print "error", error				
 		print "previous error:",self.getPreviousError()
 		
@@ -47,13 +46,13 @@ class PIDController:
 		#timeChange = time.time() - self.previousTime
 		print "timechange", timeChange
 		self.integral += error * timeChange
-		print "integral", self.integral
+		#print "integral", self.integral
 		self.setPreviousError(error)
 		self.setPreviousTime(currTime)
 		
-		print "integral val:", self.Ki * self.integral
-		print "proportional val:",self.Kp*error
-		print "derivative val:", self.Kd*derivative
+		#print "integral val:", self.Ki * self.integral
+		#print "proportional val:",self.Kp*error
+		#print "derivative val:", self.Kd*derivative
 	
 		output = self.Kp*error + self.Kd*derivative + self.Ki*self.integral
 
