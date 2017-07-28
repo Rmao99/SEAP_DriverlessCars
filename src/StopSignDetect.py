@@ -48,6 +48,13 @@ def getHeight(contours):
 def calcDistance(width):
 	return trueWidth * focalLength/ width
 
+def adjust_gamma(frame,gamma=1.0):
+	#build a lookup table mapping the pixel values [0,255] to
+	#their adjusted gamma values
+	invGamma = 1.0/gamma
+	table = np.array([((i/255.0)**invGamma)*255
+		for i in np.arange(0,256)]).astype("uint8")
+	return cv2.LUT(frame,table)
 
 stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
 vs = PiVideoStream().start()
@@ -56,7 +63,7 @@ while(1):
 
 	start_time = time.time()
 	#ret, frame = cap.read()
-	frame = cv2.imread("stop.jpg")
+	#frame = cv2.imread("stop.jpg")
 	
 	#grab the frame from the stream and resize it to have a max width of 400
 	frame = vs.read()
@@ -66,6 +73,8 @@ while(1):
 	frame = imutils.resize(frame,width=320)	
 
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	gray = (gray*0.3).astype(np.uint8)	
+	gray = adjust_gamma(gray,0.4)
 	stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 
 	if len(stops) > 0:

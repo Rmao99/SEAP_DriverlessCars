@@ -36,9 +36,9 @@ while(1):
 	#frame = (frame*scale).astype(np.uint8)
 
 
-    	frame2 = cv2.imread("stop.jpg")
+    	#frame2 = cv2.imread("stop.jpg")
   	#frame2 = cv2.resize(frame2, None, fx=3.0, fy=3.0, interpolation = cv2.INTER_CUBIC)
-	frame2 = imutils.resize(frame2,width=320)
+	#frame2 = imutils.resize(frame2,width=320)
     	
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	gray = (gray*0.3).astype(np.uint8)	
@@ -46,13 +46,13 @@ while(1):
 	#gray = cv2.equalizeHist(gray)
 	#gray = np.hstack((gray,equ))
 		
-	gray2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+	#gray2 = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
 	cv2.imshow('gray',gray)
-	cv2.imwrite('gray1.png',gray)
-	cv2.imshow('gray2',gray2)
-	cv2.imwrite('gray2.png',gray2)
+	#cv2.imwrite('gray1.png',gray)
+	#cv2.imshow('gray2',gray2)
+	#cv2.imwrite('gray2.png',gray2)
 	stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
-	stops2 = stop_cascade.detectMultiScale(gray2, 1.4, 5)
+	#stops2 = stop_cascade.detectMultiScale(gray2, 1.4, 5)
    	#stops3 = stop_cascade.detectMultiScale(gray, 1.5, 5)
     
     
@@ -62,17 +62,17 @@ while(1):
 		print "found somethin"
 		cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
       	
-	for (x,y,w,h) in stops2:
-		print "found somethin2"
-		cv2.rectangle(frame2,(x,y),(x+w,y+h),(255,255,0),2)
+#	for (x,y,w,h) in stops2:
+#		print "found somethin2"
+#		cv2.rectangle(frame2,(x,y),(x+w,y+h),(255,255,0),2)
 
 	end_time = time.time()
 	timee = end_time-start_time
-	#print timee
+	print timee
 	cv2.imshow('img',frame)
-	cv2.imwrite('frame1.png',frame)
-	cv2.imshow('img2',frame2)
-	cv2.imwrite('frame2.png',frame2)
+	#cv2.imwrite('frame1.png',frame)
+	#cv2.imshow('img2',frame2)
+	#cv2.imwrite('frame2.png',frame2)
 	k = cv2.waitKey(30) & 0xff
 	if k == 27:
 		break

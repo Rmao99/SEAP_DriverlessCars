@@ -19,7 +19,10 @@ time.sleep(2.0)
 detector = LaneDetector()
 state = State.STRAIGHT
 cnt = 0
-#fwd()
+
+trueWidth = 3.0 #inches
+trueHeight = 3.0
+focalLength = 305.5 #need to measure
 
 def DrivePID(difference,power):
 	if difference >= 0:
@@ -49,6 +52,17 @@ def DrivePIDSlow(difference,power):
 		set_right_speed(diff)
 		fwd()
 
+def calcDistance(width):
+	return trueWidth * focalLength/ width
+
+def adjust_gamma(frame,gamma=1.0):
+	#build a lookup table mapping the pixel values [0,255] to
+	#their adjusted gamma values
+	invGamma = 1.0/gamma
+	table = np.array([((i/255.0)**invGamma)*255
+		for i in np.arange(0,256)]).astype("uint8")
+	return cv2.LUT(frame,table)
+
 stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
 one_cascade = cv2.CascadeClassifier("oneway_classifier.xml")
 PIDController = PIDController()
@@ -61,6 +75,7 @@ while(1):
 
 	#frame = cv2.imread("lane1_alt2")
 	frame = imutils.resize(frame,width=320)	
+	
 	#frame = cv2.resize(frame,(320,240))
 	detector.process(frame)
 	width = 320
@@ -78,33 +93,68 @@ while(1):
 		print x2
 
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		gray = (gray*0.3).astype(np.uint8)	
+		gray = adjust_gamma(gray,0.4)
 		stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 		ones = one_cascade.detectMultiScale(gray,1.3,6)
 		print "num of stops signs found",len(stops)
 		if len(stops) > 0: #or len(ones) > 1:
-			print "Find Stop"
+			print "Found Stop"
+			stop()
 			time.sleep(3.0)
-			dist = 1000
+			for (x,y,w,h) in stops:
+						print "found somethin"
+						cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
+						width = w
+						dist = calcDistance(width)
+						print dist
 			
-			while (dist > 9):
-					print dist
-					frame = vs.read()
-					frame = imutils.resize(frame,width=320)	
-					detector.process(frame)
-					width = 320
-					left_slope = detector.get_left_slope()
-					right_slope = detector.get_right_slope()
+			enable_encoders()
+			enc_tgt(1,1,56)
+			while read_enc_status():
+				print dist
+				frame = vs.read()
+				frame = imutils.resize(frame,width=320)	
+				detector.process(frame)
+				width = 320
+				left_slope = detector.get_left_slope()
+				right_slope = detector.get_right_slope()
 	
-					x1 = detector.get_x1()
-					x2 = detector.get_x2()
-					print "x1:",  x1
-					print "x2:", x2
+				x1 = detector.get_x1()
+				x2 = detector.get_x2()
+				print "x1:",  x1
+				print "x2:", x2
 
+				if x1 is not None and x2 is not None:
 					avg = (x2+x1)/2
 					width = width/2
 					difference = width-avg
 					power = PIDController.compute(width,avg)
-					DrivePIDSlow(difference,abs(power))
+					DrivePID(difference,abs(power))
+				elif x1 is None and x2 is not None:
+					difference = 345-x2
+					power = PIDController.compute(345,x2)
+					DrivePID(difference,abs(power))
+				elif x1 is not None and x2 is None:
+					difference = -35-x1
+					power = PIDController.computer(0,x1)
+					DrivePID(difference,abs(power))
+				else:
+					fwd()
+			disable_encoders()
+			enable_encoders()
+			set_speed(68)
+			enc_tgt(1,1,8)
+			while read_enc_status():
+				print "in reading encorder status"
+				left_rot()
+			stop()		
+			disable_encoders()	
+			break			
+				
+			'''		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+					gray = (gray*0.3).astype(np.uint8)	
+					gray = adjust_gamma(gray,0.4)
 					stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 					for (x,y,w,h) in stops:
 						print "found somethin"
@@ -113,6 +163,8 @@ while(1):
 						dist = calcDistance(width)
 						print dist
 			
+			stop()
+			time.sleep(3.0)
 			enable_encoders()
 			enc_tgt(1,1,40)
 			while read_enc_status():
@@ -124,12 +176,12 @@ while(1):
 				if x1 is None and x2 is None:
 					fwd()
 				elif x1 is None and x2 is not None:
-					difference = 345-x2 #274 is x coord or approximate center
+					difference = 345-x2
 					power = PIDController.compute(345,x2)
 					DrivePID(difference,abs(power))
 				elif x1 is not None and x2 is None:
-					difference = 60-x1 #274 is x coord or approximate center
-					power = PIDController.compute(60,x1)
+					difference = 0-x1 
+					power = PIDController.compute(0,x1)
 					DrivePID(difference,abs(power))
 			disable_encoders()
 			enable_encoders()
@@ -140,13 +192,12 @@ while(1):
 				left_rot()
 			stop()		
 			disable_encoders()	
-			break			
+			break			'''
 		else:
 			print "no stops or ones found"
-
-		avg = (x2+x1)/2
-		width = width/2
-		difference = width-avg
+			avg = (x2+x1)/2
+			width = width/2
+			difference = width-avg
 
 		power = PIDController.compute(width,avg)
 	#	print "difference in x:", difference
