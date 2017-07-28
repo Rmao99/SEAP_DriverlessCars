@@ -331,8 +331,69 @@ while(1):
 		disable_encoders()	
 		
 	elif x2 is None and x1 is not None:
+		print "No right lane, time to turn"	
+		stop()		
+		time.sleep(2.0)
+
+		enable_encoders()
+		enc_tgt(1,1,40)
+		while read_enc_status():
+			frame = vs.read()
+			frame = imutils.resize(frame,width=320)	
+			detector.process(frame)
+			x1 = detector.get_x1()
+			x2 = detector.get_x2()
+			print x2
+			if x1 is None:
+				stop()
+				time.sleep(1.0)
+				disable_encoders()
+				enable_encoders()
+				enc_tgt(1,1,18)
+				while read_enc_status():
+					fwd()
+				disable_encoders()
+				break	
+
+			difference = -35-x1 #274 is x coord or approximate center
+			power = PIDController.compute(-35,x1)
+			DrivePID(difference,abs(power))
+		
+		print "just broke"
 		stop()
-		print "No right lane, time to turn"
+		disable_encoders()
+
+		time.sleep(1.0)
+		frame = vs.read()
+		frame = imutils.resize(frame,width=320)	
+		detector.process(frame)
+		x1 = detector.get_x1()
+		x2 = detector.get_x2()
+
+		if x1 is not None and x2 is not None:
+#----------------------RNG STRAIGHT OR TURN-------------------------------
+			'''enable_encoders()
+			enc_tgt(1,1,18)
+			while read_enc_status():
+				frame = vs.read()
+				frame = imutils.resize(frame,width=320)	
+				detector.process(frame)
+				x1 = detector.get_x1()
+				x2 = detector.get_x2()
+				print x1
+				if x1 is None:
+					continue
+				difference = -35-x1 #274 is x coord or approximate center
+				power = PIDController.compute(-35,x1)
+				DrivePID(difference,abs(power))'''
+		enable_encoders()
+		set_speed(68)
+		enc_tgt(1,1,8)
+		while read_enc_status():
+			print "in reading encorder status"
+			left_rot()
+		stop()		
+		disable_encoders()	
 	else:
 		stop()
 		print "missing a lane atm, stopping"
