@@ -196,8 +196,8 @@ while(1):
 			time.sleep(2.0)
 			driveEncoderCount(18)
 			enable_encoders()
-			set_speed(68)
-			enc_tgt(1,1,8)
+			set_speed(70)
+			enc_tgt(1,1,10)
 			while read_enc_status():
 				print "in reading encorder status"
 				left_rot()
@@ -273,7 +273,7 @@ while(1):
 			continue'''
 
 		enable_encoders()
-		enc_tgt(1,1,40)
+		enc_tgt(1,1,34)
 		while read_enc_status():
 			frame = vs.read()
 			frame = imutils.resize(frame,width=320)	
@@ -286,7 +286,7 @@ while(1):
 				time.sleep(1.0)
 				disable_encoders()
 				enable_encoders()
-				enc_tgt(1,1,18)
+				enc_tgt(1,1,16)
 				while read_enc_status():
 					fwd()
 				disable_encoders()
@@ -308,7 +308,7 @@ while(1):
 
 		if x1 is not None and x2 is not None:
 			enable_encoders()
-			enc_tgt(1,1,18)
+			enc_tgt(1,1,16)
 			while read_enc_status():
 				frame = vs.read()
 				frame = imutils.resize(frame,width=320)	
@@ -322,8 +322,8 @@ while(1):
 				power = PIDController.compute(345,x2)
 				DrivePID(difference,abs(power))
 		enable_encoders()
-		set_speed(68)
-		enc_tgt(1,1,8)
+		set_speed(70)
+		enc_tgt(1,1,10)
 		while read_enc_status():
 			print "in reading encorder status"
 			right_rot()
@@ -336,7 +336,7 @@ while(1):
 		time.sleep(2.0)
 
 		enable_encoders()
-		enc_tgt(1,1,40)
+		enc_tgt(1,1,34)
 		while read_enc_status():
 			frame = vs.read()
 			frame = imutils.resize(frame,width=320)	
@@ -349,7 +349,7 @@ while(1):
 				time.sleep(1.0)
 				disable_encoders()
 				enable_encoders()
-				enc_tgt(1,1,18)
+				enc_tgt(1,1,16)
 				while read_enc_status():
 					fwd()
 				disable_encoders()
@@ -387,8 +387,8 @@ while(1):
 				power = PIDController.compute(-35,x1)
 				DrivePID(difference,abs(power))'''
 		enable_encoders()
-		set_speed(68)
-		enc_tgt(1,1,8)
+		set_speed(70)
+		enc_tgt(1,1,10)
 		while read_enc_status():
 			print "in reading encorder status"
 			left_rot()
