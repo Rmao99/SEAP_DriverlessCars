@@ -7,12 +7,12 @@ from PIDController import *
 from State import *
 from gopigo import *
 
-
 import time
 import cv2
 import numpy as np
 import imutils
 import sys
+import random #rng
 
 vs = PiVideoStream().start()
 time.sleep(2.0)
@@ -26,11 +26,11 @@ oneWidth = 4.0
 oneHieght = 4.0
 focalLength = 305.5 #need to measure
 
-def DrivePID(difference,power):
+def DrivePID(difference,power): #if difference is positive, recenter to the left
 	if difference >= 0:
 		diff =int(45+power)
 		print "Setting right to: ",diff
-		set_left_speed(diff)
+		set_left_speed(diff) #motors are switched
 		set_right_speed(45)	
 		fwd()		
 	elif difference < 0:
@@ -201,15 +201,20 @@ while(1):
 			driveEncoderCount(38)
 			stop()
 			time.sleep(2.0)
-			driveEncoderCount(18)
-			enable_encoders()
-			set_speed(70)
-			enc_tgt(1,1,10)
-			#if avg x is to the right, then turn right. 
-			#else
-			while read_enc_status():
-				print "in reading encorder status"
-				left_rot()
+			
+			i = random.randint(0,1)
+			if i == 0:
+				driveEncoderCount(18)
+				enable_encoders()
+				set_speed(70)
+				enc_tgt(1,1,10)
+				#if avg x is to the right, then turn right. 
+				#else
+				while read_enc_status():
+					print "in reading encorder status"
+					left_rot()
+			elif i == 1:
+				driveEncoderCount(36)
 			stop()		
 			disable_encoders()	
 			continue			 
