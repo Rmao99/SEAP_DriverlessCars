@@ -193,25 +193,25 @@ class LaneDetector:
 #		cv2.imshow('Edges',cannied)
 #		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
-		cv2.imshow("Region of Interest", region)
+#		cv2.imshow("Region of Interest", region)
 #		cv2.imwrite("roi.png", region)
 		
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 20,minLineLength=15,maxLineGap=300)
 
 		copy= frame.copy()
-		if lines is not None:		
+		'''if lines is not None:		
 			for line in lines:
 				for x1,y1,x2,y2 in line:
 					cv2.line(copy, (x1,y1), (x2,y2), (255,0,0), 7)
-		cv2.imshow("Hough Lines", copy)
+		cv2.imshow("Hough Lines", copy)'''
 #		cv2.imwrite("hough.png", copy)
 
 		lanes = self.findLanes(cannied,lines)
 
-		if lanes is not None:	
+		'''if lanes is not None:	
 			line_img = self.drawLines(frame,lanes)
 			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
-			cv2.imshow("overlay", final)
+			cv2.imshow("overlay", final)'''
 #			cv2.imwrite("overlay.png", final)
 		return lanes
 

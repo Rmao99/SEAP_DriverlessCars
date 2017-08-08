@@ -6,15 +6,15 @@ import imutils
 from imutils.video import WebcamVideoStream
 
 #PI VIDEO STREAM
-#from imutils.video.pivideostream import PiVideoStream
-#from imutils.video import FPS
-#from picamera.array import PiRGBArray
-#from picamera import PiCamera
+from imutils.video.pivideostream import PiVideoStream
+from imutils.video import FPS
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 
 
-#vs = PiVideoStream().start()
+vs = PiVideoStream().start()
 #vs = WebcamVideoStream(0).start()
-cap = cv2.VideoCapture(0)
+#cap = cv2.VideoCapture(0)
 
 time.sleep(2.0)
 oneway_cascade = cv2.CascadeClassifier('cascade.xml')
@@ -23,8 +23,8 @@ oneway_cascade = cv2.CascadeClassifier('cascade.xml')
 while(1):
 	start_time = time.time()
 	#grab the frame from the stream and resize it to have a max width of 400
-	#frame = vs.read()
-	_,frame = cap.read()
+	frame = vs.read()
+	#_,frame = cap.read()
 	frame = imutils.resize(frame,width=400)
     #frame = cv2.imread("stop.jpg")
    # frame = cv2.resize(frame, None, fx=3.0, fy=3.0, interpolation = cv2.INTER_CUBIC)
@@ -47,7 +47,7 @@ while(1):
 		gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
 		ret,gray = cv2.threshold(gray,127,255,0)
 		cv2.imshow("gray",gray)
-		_,contours,heirarchy = cv2.findContours(gray,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+		contours,heirarchy = cv2.findContours(gray,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
 		Xsum = 0
 		count = 0
 		

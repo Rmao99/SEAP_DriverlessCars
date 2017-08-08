@@ -22,8 +22,8 @@ cnt = 0
 
 stopWidth = 3.0 #inches
 stopHeight = 3.0
-oneWidth =
-oneHeight = 
+oneWidth = 4.0
+oneHieght = 4.0
 focalLength = 305.5 #need to measure
 
 def DrivePID(difference,power):
@@ -132,9 +132,11 @@ def driveEncoderCount(count):
 	
 
 stop_cascade = cv2.CascadeClassifier('stopsign_classifier.xml')
-one_cascade = cv2.CascadeClassifier("onewaysignV3.xml")
+one_cascade = cv2.CascadeClassifier("onewaysignV4.xml")
 PIDController = PIDController()
-dist = None
+stopDist = None
+oneDist = None
+avg_x = None
 while(1):
 	
 	start_time = time.time()
@@ -163,12 +165,11 @@ while(1):
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		gray = (gray*0.3).astype(np.uint8)	
 		gray = adjust_gamma(gray,0.4)
-		
 		stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 		ones = one_cascade.detectMultiScale(gray,1.3,6)
 		print "num of stops signs found",len(stops)
 		dist = None
-		if len(stops) > 0:
+		if len(stops) > 0: #or len(ones) > 1:
 			print "Found Stop"
 			stop()
 			time.sleep(3.0)			
@@ -176,10 +177,69 @@ while(1):
 			for (x,y,w,h) in stops:
 				print "found somethin"
 				width = w
-				dist = calcStopDistance(width)
+				stopDist = calcStopDistance(width)
 				print "DISTANCE",dist
-			print dist
-			while dist > 16:
+			print stopDist
+			while stopDist > 16:
+				frame = vs.read()	
+				driveForwardSlow(frame)	
+				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+				gray = (gray*0.3).astype(np.uint8)	
+				gray = adjust_gamma(gray,0.4)
+				stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
+				for (x,y,w,h) in stops:
+					print "found somethin"
+					#cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
+					width = w
+					stopDist = calcStopDistance(width)
+					print "DISTANCE",dist
+				print dist
+			print "______________________EXITING WHILE ______________________"
+			stopDist = None			
+			stop()
+			time.sleep(2.0)			
+			driveEncoderCount(38)
+			stop()
+			time.sleep(2.0)
+			driveEncoderCount(18)
+			enable_encoders()
+			set_speed(70)
+			enc_tgt(1,1,10)
+			#if avg x is to the right, then turn right. 
+			#else
+			while read_enc_status():
+				print "in reading encorder status"
+				left_rot()
+			stop()		
+			disable_encoders()	
+			continue			 
+		elif len(ones) > 0:
+			print "Found One-------------------------------------------------------------------------"
+			stop()
+			time.sleep(10.0)			
+			
+			for (x,y,w,h) in ones:
+				print "found somethin"
+				width = w
+				oneDist = calcOneDistance(width)
+				cropped_frame = frame[y:y+h,x:x+w]
+				gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
+				ret,gray = cv2.threshold(gray,127,255,0)
+				print "DISTANCE",dist
+
+				contours,heirarchy = cv2.findContours(gray,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+				Xsum = 0
+				count = 0
+				for cnt in contours: #contours is all the contours. cnt is the list of points making a single contour [ [[x1,y1]],[[x2,y2]] ]
+					if cv2.contourArea(cnt) > 200:
+						for [[x,y]] in cnt: #unpack cnt
+							Xsum += x 
+							count += 1.0
+				avg_x = Xsum/count
+		
+			print oneDist
+		
+			'''	while oneDist > 16:
 				frame = vs.read()	
 				driveForwardSlow(frame)	
 				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -193,7 +253,8 @@ while(1):
 					dist = calcStopDistance(width)
 					print "DISTANCE",dist
 				print dist
-			print "______________________EXITING WHILE ______________________"
+			print "______________________EXITING WHILE ______________________"'''
+		
 			stop()
 			time.sleep(2.0)			
 			driveEncoderCount(38)
@@ -203,33 +264,19 @@ while(1):
 			enable_encoders()
 			set_speed(70)
 			enc_tgt(1,1,10)
-			while read_enc_status():
-				print "in reading encorder status"
-				left_rot()
+
+			if avg_x > 60:
+				while read_enc_status():
+					print "in reading encorder status"
+					left_rot()
+			elif avg_x <= 60:
+				while read_enc_status():
+					right_rot() #turn left
+			else:
+				print "no val"				
 			stop()		
 			disable_encoders()	
-			continue	
-		elif len(ones) > 0:	
-			print "Found Onewaysign"
-			stop()
-			time.sleep(3.0)		 
-
-			for (x,y,w,h) in ones:
-				width = w
-				dist = calcOneDistance(width)
-				print "DISTANCE",dist
-			print dist
-			while dist > 16:
-				frame = vs.read()	
-				driveForwardSlow(frame)	
-				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-				ones = one_cascade.detectMultiScale(gray, 1.3, 5)
-				for (x,y,w,h) in ones:
-					print "found somethin"
-					width = w
-					dist = calcStopDistance(width)
-					print "DISTANCE",dist
-				print dist
+			continue			 
 		else:
 			print "no stops or ones found"
 			avg = (x2+x1)/2
