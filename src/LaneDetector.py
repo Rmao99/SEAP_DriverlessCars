@@ -182,19 +182,19 @@ class LaneDetector:
 		
 	def process(self, frame):
 
-#		cv2.imshow("original", frame)
-#		cv2.imwrite("original.png",frame)
+		cv2.imshow("original", frame)
+		cv2.imwrite("original.png",frame)
 		gray = self.blue(frame)
-#		cv2.imshow('threshed',gray)
-#		cv2.imwrite("threshed.png", gray)
+		cv2.imshow('threshed',gray)
+		cv2.imwrite("threshed.png", gray)
 		gauss_gray = self.applyGauss(gray)
 #		cv2.imwrite('blurred.png',gauss_gray)
 		cannied = cv2.Canny(gauss_gray, 55,150)
 #		cv2.imshow('Edges',cannied)
 #		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
-#		cv2.imshow("Region of Interest", region)
-#		cv2.imwrite("roi.png", region)
+		cv2.imshow("Region of Interest", region)
+		cv2.imwrite("roi.png", region)
 		
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 20,minLineLength=15,maxLineGap=300)
 
@@ -208,11 +208,11 @@ class LaneDetector:
 
 		lanes = self.findLanes(cannied,lines)
 
-		'''if lanes is not None:	
+		if lanes is not None:	
 			line_img = self.drawLines(frame,lanes)
 			final = cv2.addWeighted(frame, 1.0, line_img, 0.5,0.0)
-			cv2.imshow("overlay", final)'''
-#			cv2.imwrite("overlay.png", final)
+			cv2.imshow("overlay", final)
+			cv2.imwrite("overlay.png", final)
 		return lanes
 
 	def get_left_slope(self):

@@ -4,7 +4,6 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 from LaneDetector import *
 from PIDController import *
-from State import *
 from gopigo import *
 
 import time
@@ -17,8 +16,6 @@ import random #rng
 vs = PiVideoStream().start()
 time.sleep(2.0)
 detector = LaneDetector()
-state = State.STRAIGHT
-cnt = 0
 
 stopWidth = 3.0 #inches
 stopHeight = 3.0
@@ -90,11 +87,46 @@ def driveForwardSlow(frame):
 		power = PIDController.compute(345,x2)
 		DrivePIDSlow(difference,abs(power))
 	elif x1 is not None and x2 is None:
-		difference = -35-x1
-		power = PIDController.compute(-35,x1)
+		difference = -25-x1
+		power = PIDController.compute(-25,x1)
 		DrivePIDSlow(difference,abs(power))
 	else:
 		fwd()
+
+def driveEncoderCountSlow(count):
+	enable_encoders()
+	enc_tgt(1,1,count)
+	while read_enc_status():
+		frame = vs.read()
+		frame = imutils.resize(frame,width=320)	
+		detector.process(frame)
+		width = 320
+		left_slope = detector.get_left_slope()
+		right_slope = detector.get_right_slope()
+	
+		x1 = detector.get_x1()
+		x2 = detector.get_x2()
+		print "x1:",  x1
+		print "x2:", x2
+
+		if x1 is not None and x2 is not None:
+			avg = (x2+x1)/2
+			width = width/2
+			difference = width-avg
+			power = PIDController.compute(width,avg)
+			DrivePIDSlow(difference,abs(power))
+		elif x1 is None and x2 is not None:
+			difference = 345-x2
+			power = PIDController.compute(345,x2)
+			DrivePIDSlow(difference,abs(power))
+		elif x1 is not None and x2 is None:
+			difference = -25-x1
+			power = PIDController.compute(-25,x1)
+			DrivePIDSlow(difference,abs(power))
+		else:
+			set_speed(35)
+			fwd()
+	disable_encoders()
 
 def driveEncoderCount(count):
 	enable_encoders()
@@ -123,10 +155,11 @@ def driveEncoderCount(count):
 			power = PIDController.compute(345,x2)
 			DrivePID(difference,abs(power))
 		elif x1 is not None and x2 is None:
-			difference = -35-x1
-			power = PIDController.compute(-35,x1)
+			difference = -25-x1
+			power = PIDController.compute(-25,x1)
 			DrivePID(difference,abs(power))
 		else:
+			set_speed(45)
 			fwd()
 	disable_encoders()
 	
@@ -163,10 +196,10 @@ while(1):
 		print x2
 
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		gray = (gray*0.3).astype(np.uint8)	
-		gray = adjust_gamma(gray,0.4)
-		stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
-		ones = one_cascade.detectMultiScale(gray,1.3,6)
+		gray2 = (gray*0.3).astype(np.uint8)	
+		gray2 = adjust_gamma(gray2,0.4)
+		stops = stop_cascade.detectMultiScale(gray2, 1.3, 5)
+		ones = one_cascade.detectMultiScale(gray,1.2,5) #The two parameters are very important. The greater the scale factor (1.1 and 1.3), the smaller the image is when searching for your target. In this case, I did not scale down the one way sign detection as much because the sign would be too small to detect. Low min neighbors results in too many false positives, but too high results in not being able to detect your target
 		print "num of stops signs found",len(stops)
 		dist = None
 		if len(stops) > 0: #or len(ones) > 1:
@@ -208,8 +241,6 @@ while(1):
 				enable_encoders()
 				set_speed(70)
 				enc_tgt(1,1,10)
-				#if avg x is to the right, then turn right. 
-				#else
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()
@@ -218,65 +249,59 @@ while(1):
 			stop()		
 			disable_encoders()	
 			continue			 
-		elif len(ones) > 0:
-			print "Found One-------------------------------------------------------------------------"
+		elif len(ones) > 0: #If found a one way sign
+			print "Found One-------------------------------------------------------------------------"			
 			stop()
-			time.sleep(10.0)			
-			
-			for (x,y,w,h) in ones:
-				print "found somethin"
-				width = w
-				oneDist = calcOneDistance(width)
-				cropped_frame = frame[y:y+h,x:x+w]
-				gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
-				ret,gray = cv2.threshold(gray,127,255,0)
-				print "DISTANCE",dist
-
-				contours,heirarchy = cv2.findContours(gray,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-				Xsum = 0
-				count = 0
-				for cnt in contours: #contours is all the contours. cnt is the list of points making a single contour [ [[x1,y1]],[[x2,y2]] ]
-					if cv2.contourArea(cnt) > 200:
-						for [[x,y]] in cnt: #unpack cnt
-							Xsum += x 
-							count += 1.0
-				avg_x = Xsum/count
-		
-			print oneDist
-		
-			'''	while oneDist > 16:
+			ratio = None
+			rightcnt = 0
+			leftcnt = 0
+			cnt = 0
+			while cnt <7:
 				frame = vs.read()	
-				driveForwardSlow(frame)	
+				print "just read frame"
 				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-				gray = (gray*0.3).astype(np.uint8)	
-				gray = adjust_gamma(gray,0.4)
-				stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
-				for (x,y,w,h) in stops:
-					print "found somethin"
-					#cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
-					width = w
-					dist = calcStopDistance(width)
-					print "DISTANCE",dist
-				print dist
-			print "______________________EXITING WHILE ______________________"'''
-		
-			stop()
-			time.sleep(2.0)			
-			driveEncoderCount(38)
-			stop()
-			time.sleep(2.0)
-			driveEncoderCount(18)
-			enable_encoders()
-			set_speed(70)
-			enc_tgt(1,1,10)
+				ones = one_cascade.detectMultiScale(gray,1.2,5)	
+				for (x,y,w,h) in ones:
+					cnt+=1
+					cropped_frame = frame[y:y+h,x:x+w]
+				
+					cropped_frame = imutils.resize(cropped_frame,width=103)
+					gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
+					gray = cv2.threshold(gray,127,255,cv2.THRESH_BINARY)[1]
+					gray= cv2.GaussianBlur(gray, (3,3), 0)
+				
+					cropped_frame2 = gray[0:gray.shape[0],0:7*gray.shape[1]/20]	#check one half of the image. This is less based on lighting because we aren't looking for the raw contours, rather just the number of white pixels. (lighting + thresholding and then contouring sucks)
+					black = cv2.countNonZero(cropped_frame2)
+					total = cropped_frame2.shape[1] * cropped_frame2.shape[0]
+					white = total-black
+					ratio = white/black
+					if ratio is None:
+						print "no ratio val foudn"
 
-			if avg_x > 60:
-				while read_enc_status():
-					print "in reading encorder status"
-					left_rot()
-			elif avg_x <= 60:
+					if ratio <= 0.42: #sign is pointing left if the ratio is less than this value
+						leftcnt += 1
+					elif ratio > 0.42: #Sign is pointing right if the ratio is greater than this value
+						rightcnt +=1
+			
+			if leftcnt > rightcnt: 
+				driveEncoderCountSlow(43)
+				stop()
+				time.sleep(2.0)
+				enable_encoders()
+				set_speed(70)
+				enc_tgt(1,1,10)
 				while read_enc_status():
 					right_rot() #turn left
+			elif rightcnt > leftcnt: 
+				driveEncoderCountSlow(48)
+				stop()
+				time.sleep(2.0)
+				enable_encoders()
+				set_speed(70)
+				enc_tgt(1,1,10)
+				while read_enc_status():
+					print "in reading encorder status"
+					left_rot()			
 			else:
 				print "no val"				
 			stop()		
@@ -391,8 +416,8 @@ while(1):
 				disable_encoders()
 				break	
 
-			difference = -35-x1 #274 is x coord or approximate center
-			power = PIDController.compute(-35,x1)
+			difference = -25-x1 #274 is x coord or approximate center
+			power = PIDController.compute(-25,x1)
 			DrivePID(difference,abs(power))
 		
 		print "just broke"
