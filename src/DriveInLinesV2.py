@@ -235,19 +235,21 @@ while(1):
 			stop()
 			time.sleep(2.0)
 			
-			i = random.randint(0,1)
-			if i == 0:
-				driveEncoderCount(18)
-				enable_encoders()
-				set_speed(175)
-				enc_tgt(1,1,13)
-				while read_enc_status():
-					print "in reading encorder status"
-					left_rot()
-			elif i == 1:
-				driveEncoderCount(36)
+			#i = random.randint(0,1)
+			#if i == 0:
+			driveEncoderCount(18)
+			enable_encoders()
+			set_speed(175)
+			enc_tgt(1,1,13)
+			while read_enc_status():
+				print "in reading encorder status"
+				left_rot()
+				time.sleep(2.0)
+			#elif i == 1:
+			#	driveEncoderCount(36)
 			stop()		
 			disable_encoders()	
+			time.sleep(1.0)
 			continue			 
 		elif len(ones) > 0: #If found a one way sign
 			print "Found One-------------------------------------------------------------------------"			
@@ -309,7 +311,7 @@ while(1):
 				time.sleep(2.0)
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,13)
+				enc_tgt(1,1,15)
 				while read_enc_status():
 					right_rot() #turn left
 			elif ratio <= 0.395: #sign is pointing to the right 
@@ -318,7 +320,7 @@ while(1):
 				time.sleep(2.0)
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,13)
+				enc_tgt(1,1,15)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()			
@@ -326,6 +328,7 @@ while(1):
 				print "no val"				
 			stop()		
 			disable_encoders()	
+			time.sleep(1.0)
 			continue			 
 		else:
 			print "no stops or ones found"
@@ -375,24 +378,26 @@ while(1):
 		x2 = detector.get_x2()
 
 		if x1 is not None and x2 is not None:
-			driveEncoderCount(17)
-			i = random.randint(0,1)
-			if i == 1:		
-				enable_encoders()
-				set_speed(175)
-				enc_tgt(1,1,13)
-				while read_enc_status():
-					print "in reading encorder status"
-					right_rot()
+			driveEncoderCount(19)
+			#i = random.randint(0,1)
+			#if i == 1:		
+			enable_encoders()
+			set_speed(175)
+			enc_tgt(1,1,18)
+			while read_enc_status():
+				print "in reading encorder status"
+				right_rot()
+			time.sleep(2.0)
 		else:
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,13)
+				enc_tgt(1,1,15)
 				while read_enc_status():
 					print "in reading encorder status"
 					right_rot()
 		stop()		
-		disable_encoders()	
+		disable_encoders()
+		time.sleep(1.0)	
 	elif x2 is None and x1 is not None:
 		print "No right lane, time to turn"	
 		stop()		
@@ -436,19 +441,20 @@ while(1):
 			if i == 0:		
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,13)
+				enc_tgt(1,1,15)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()
 		else:
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,13)
+				enc_tgt(1,1,15)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()
 		stop()		
 		disable_encoders()	
+		time.sleep(2.0)
 	else:
 		stop()
 		print "missing a lane atm, stopping"

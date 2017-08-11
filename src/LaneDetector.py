@@ -193,7 +193,7 @@ class LaneDetector:
 #		cv2.imshow('Edges',cannied)
 #		cv2.imwrite("edges.png", cannied)
 		region = self.ROI(cannied)
-#		cv2.imshow("Region of Interest", region)
+		cv2.imshow("Region of Interest", region)
 #		cv2.imwrite("roi.png", region)
 		
 		lines = cv2.HoughLinesP(region,  1, np.pi/180, 20,minLineLength=15,maxLineGap=300)
