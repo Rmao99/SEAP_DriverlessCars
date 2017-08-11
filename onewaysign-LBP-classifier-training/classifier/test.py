@@ -50,14 +50,16 @@ while(1):
 		gray = cv2.threshold(gray,127,255,cv2.THRESH_BINARY)[1]		
 		gray= cv2.GaussianBlur(gray, (3,3), 0)
 		cv2.imshow("gray",gray)
-		
+		cv2.imwrite("gray.png",gray)
 		cropped_frame2 = gray[0:gray.shape[0],0:7*gray.shape[1]/20]	#check one half of the image. This is less based on lighting because we aren't looking for the raw contours, rather just the number of white pixels. (lighting + thresholding and then contouring sucks)
 		cv2.imshow("cropped2",cropped_frame2)
+		cv2.imwrite("cropped2.png",cropped_frame2)
 		white = cv2.countNonZero(cropped_frame2)
 		total = cropped_frame2.shape[1] * cropped_frame2.shape[0]
+		ratio = float(white)/total
 		print "number of non zero", white
 		print "total num",total
-		print "ratio", white/total*1.0
+		print "ratio", ratio
 		#white = total-i
 		#print "white",white
 
@@ -97,6 +99,7 @@ while(1):
 	cv2.imshow('img',frame)
 	if cropped_frame is not None:
 		cv2.imshow('cropped',cropped_frame)
+		cv2.imwrite("cropped.png",cropped_frame)
 
 	k = cv2.waitKey(30) & 0xff
 	if k == 27:

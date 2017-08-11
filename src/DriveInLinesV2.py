@@ -19,8 +19,8 @@ detector = LaneDetector()
 
 stopWidth = 3.0 #inches
 stopHeight = 3.0
-oneWidth = 4.0
-oneHieght = 4.0
+oneWidth = 6.0
+oneHieght = 6.0
 focalLength = 305.5 #need to measure
 
 def DrivePID(difference,power): #if difference is positive, recenter to the left
@@ -83,12 +83,12 @@ def driveForwardSlow(frame):
 		power = PIDController.compute(width,avg)
 		DrivePIDSlow(difference,abs(power))
 	elif x1 is None and x2 is not None:
-		difference = 345-x2
-		power = PIDController.compute(345,x2)
+		difference = 380-x2
+		power = PIDController.compute(380,x2)
 		DrivePIDSlow(difference,abs(power))
 	elif x1 is not None and x2 is None:
-		difference = -25-x1
-		power = PIDController.compute(-25,x1)
+		difference = -35-x1
+		power = PIDController.compute(-35,x1)
 		DrivePIDSlow(difference,abs(power))
 	else:
 		fwd()
@@ -116,12 +116,12 @@ def driveEncoderCountSlow(count):
 			power = PIDController.compute(width,avg)
 			DrivePIDSlow(difference,abs(power))
 		elif x1 is None and x2 is not None:
-			difference = 345-x2
-			power = PIDController.compute(345,x2)
+			difference = 380-x2
+			power = PIDController.compute(380,x2)
 			DrivePIDSlow(difference,abs(power))
 		elif x1 is not None and x2 is None:
-			difference = -25-x1
-			power = PIDController.compute(-25,x1)
+			difference = -35-x1
+			power = PIDController.compute(-35,x1)
 			DrivePIDSlow(difference,abs(power))
 		else:
 			set_speed(35)
@@ -151,12 +151,12 @@ def driveEncoderCount(count):
 			power = PIDController.compute(width,avg)
 			DrivePID(difference,abs(power))
 		elif x1 is None and x2 is not None:
-			difference = 345-x2
-			power = PIDController.compute(345,x2)
+			difference = 380-x2
+			power = PIDController.compute(380,x2)
 			DrivePID(difference,abs(power))
 		elif x1 is not None and x2 is None:
-			difference = -25-x1
-			power = PIDController.compute(-25,x1)
+			difference = -35-x1
+			power = PIDController.compute(-35,x1)
 			DrivePID(difference,abs(power))
 		else:
 			set_speed(45)
@@ -239,8 +239,8 @@ while(1):
 			if i == 0:
 				driveEncoderCount(18)
 				enable_encoders()
-				set_speed(70)
-				enc_tgt(1,1,10)
+				set_speed(175)
+				enc_tgt(1,1,13)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()
@@ -252,53 +252,73 @@ while(1):
 		elif len(ones) > 0: #If found a one way sign
 			print "Found One-------------------------------------------------------------------------"			
 			stop()
+			time.sleep(2.0)
 			ratio = None
-			rightcnt = 0
-			leftcnt = 0
-			cnt = 0
-			while cnt <7:
+			#rightcnt = 0
+			#leftcnt = 0
+			#cnt = 0
+			#while cnt <7:
+			#frame = vs.read()	
+			#print "just read frame"
+			#gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+			#ones = one_cascade.detectMultiScale(gray,1.2,5)	
+			for (x,y,w,h) in ones:
+			#	cnt+=1
+				width = w
+				oneDist = calcOneDistance(width)
+			while oneDist > 16:
 				frame = vs.read()	
-				print "just read frame"
+				driveForwardSlow(frame)	
 				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-				ones = one_cascade.detectMultiScale(gray,1.2,5)	
+				ones = one_cascade.detectMultiScale(gray, 1.2, 5)
 				for (x,y,w,h) in ones:
-					cnt+=1
-					cropped_frame = frame[y:y+h,x:x+w]
+					print "found somethin"
+					#cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
+					width = w
+					oneDist = calcOneDistance(width)
+					print "DISTANCE",dist
+				print dist
+			print "______________________EXITING WHILE ______________________"
+			oneDist = None			
+			stop()
 				
-					cropped_frame = imutils.resize(cropped_frame,width=103)
-					gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
-					gray = cv2.threshold(gray,127,255,cv2.THRESH_BINARY)[1]
-					gray= cv2.GaussianBlur(gray, (3,3), 0)
+			for(x,y,w,h) in ones:
+				cropped_frame = frame[y:y+h,x:x+w]
 				
-					cropped_frame2 = gray[0:gray.shape[0],0:7*gray.shape[1]/20]	#check one half of the image. This is less based on lighting because we aren't looking for the raw contours, rather just the number of white pixels. (lighting + thresholding and then contouring sucks)
-					black = cv2.countNonZero(cropped_frame2)
-					total = cropped_frame2.shape[1] * cropped_frame2.shape[0]
-					white = total-black
-					ratio = white/black
-					if ratio is None:
-						print "no ratio val foudn"
-
-					if ratio <= 0.42: #sign is pointing left if the ratio is less than this value
-						leftcnt += 1
-					elif ratio > 0.42: #Sign is pointing right if the ratio is greater than this value
-						rightcnt +=1
-			
-			if leftcnt > rightcnt: 
-				driveEncoderCountSlow(43)
+				cropped_frame = imutils.resize(cropped_frame,width=103)
+				gray = cv2.cvtColor(cropped_frame, cv2.COLOR_BGR2GRAY)
+				gray = cv2.threshold(gray,127,255,cv2.THRESH_BINARY)[1]
+				gray= cv2.GaussianBlur(gray, (3,3), 0)
+				
+				cropped_frame2 = gray[0:gray.shape[0],0:7*gray.shape[1]/20]	#check one half of the image. This is less based on lighting because we aren't looking for the raw contours, rather just the number of white pixels. (lighting + thresholding and then contouring sucks)
+				white = cv2.countNonZero(cropped_frame2)
+				total = cropped_frame2.shape[1] * cropped_frame2.shape[0]
+				ratio = float(white)/total #change to float to prevent rounding 
+				if ratio is None:
+					print "no ratio val foudn"
+					continue
+				'''if ratio <= 0.38: #sign is pointing right if the ratio is less than this value
+					rightcnt += 1
+				elif ratio > 0.42: #Sign is pointing right if the ratio is greater than this value
+					rightcnt +=1'''
+			print "RATIO:------------------",ratio
+			time.sleep(2.0)
+			if ratio > 0.395: #sign is pointing to the left 
+				driveEncoderCountSlow(34)
 				stop()
 				time.sleep(2.0)
 				enable_encoders()
-				set_speed(70)
-				enc_tgt(1,1,10)
+				set_speed(175)
+				enc_tgt(1,1,13)
 				while read_enc_status():
 					right_rot() #turn left
-			elif rightcnt > leftcnt: 
-				driveEncoderCountSlow(48)
+			elif ratio <= 0.395: #sign is pointing to the right 
+				driveEncoderCountSlow(34)
 				stop()
 				time.sleep(2.0)
 				enable_encoders()
-				set_speed(70)
-				enc_tgt(1,1,10)
+				set_speed(175)
+				enc_tgt(1,1,13)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()			
@@ -318,23 +338,11 @@ while(1):
 		print "No left lane, time to turn"		
 		stop()		
 		time.sleep(2.0)
-		'''skip = False
-		cnt = 0
-		while(cnt < 2):
-			frame = vs.read()
-			frame = imutils.resize(frame,width=320)
-			detector.process(frame)
-			x1 = detector.get_x1()
-			x2 = detector.get_x2()
-			if x1 is not None:
-				skip = True
-			cnt+=1	
-
-		if skip == True:
-			continue'''
 
 		enable_encoders()
-		enc_tgt(1,1,34)
+		driveEncoderCount(38)		
+		'''enc_tgt(1,1,38)
+		
 		while read_enc_status():
 			frame = vs.read()
 			frame = imutils.resize(frame,width=320)	
@@ -351,12 +359,11 @@ while(1):
 				while read_enc_status():
 					fwd()
 				disable_encoders()
-				break	
-
-			difference = 345-x2 #274 is x coord or approximate center
-			power = PIDController.compute(345,x2)
-			DrivePID(difference,abs(power))
-		print "just broke"
+				break
+			drive
+			difference = 380-x2 #274 is x coord or approximate center
+			power = PIDController.compute(380,x2)
+			DrivePID(difference,abs(power))'''
 		stop()
 		disable_encoders()
 
@@ -368,36 +375,31 @@ while(1):
 		x2 = detector.get_x2()
 
 		if x1 is not None and x2 is not None:
-			enable_encoders()
-			enc_tgt(1,1,16)
-			while read_enc_status():
-				frame = vs.read()
-				frame = imutils.resize(frame,width=320)	
-				detector.process(frame)
-				x1 = detector.get_x1()
-				x2 = detector.get_x2()
-				print x2
-				if x2 is None:
-					continue
-				difference = 345-x2 #274 is x coord or approximate center
-				power = PIDController.compute(345,x2)
-				DrivePID(difference,abs(power))
-		enable_encoders()
-		set_speed(70)
-		enc_tgt(1,1,10)
-		while read_enc_status():
-			print "in reading encorder status"
-			right_rot()
+			driveEncoderCount(17)
+			i = random.randint(0,1)
+			if i == 1:		
+				enable_encoders()
+				set_speed(175)
+				enc_tgt(1,1,13)
+				while read_enc_status():
+					print "in reading encorder status"
+					right_rot()
+		else:
+				enable_encoders()
+				set_speed(175)
+				enc_tgt(1,1,13)
+				while read_enc_status():
+					print "in reading encorder status"
+					right_rot()
 		stop()		
 		disable_encoders()	
-		
 	elif x2 is None and x1 is not None:
 		print "No right lane, time to turn"	
 		stop()		
 		time.sleep(2.0)
-
-		enable_encoders()
-		enc_tgt(1,1,34)
+		driveEncoderCount(38)
+		'''enable_encoders()
+		enc_tgt(1,1,38)
 		while read_enc_status():
 			frame = vs.read()
 			frame = imutils.resize(frame,width=320)	
@@ -416,11 +418,9 @@ while(1):
 				disable_encoders()
 				break	
 
-			difference = -25-x1 #274 is x coord or approximate center
-			power = PIDController.compute(-25,x1)
-			DrivePID(difference,abs(power))
-		
-		print "just broke"
+			difference = -35-x1 #274 is x coord or approximate center
+			power = PIDController.compute(-35,x1)
+			DrivePID(difference,abs(power))'''
 		stop()
 		disable_encoders()
 
@@ -432,27 +432,21 @@ while(1):
 		x2 = detector.get_x2()
 
 		if x1 is not None and x2 is not None:
-#----------------------RNG STRAIGHT OR TURN-------------------------------
-			'''enable_encoders()
-			enc_tgt(1,1,18)
-			while read_enc_status():
-				frame = vs.read()
-				frame = imutils.resize(frame,width=320)	
-				detector.process(frame)
-				x1 = detector.get_x1()
-				x2 = detector.get_x2()
-				print x1
-				if x1 is None:
-					continue
-				difference = -35-x1 #274 is x coord or approximate center
-				power = PIDController.compute(-35,x1)
-				DrivePID(difference,abs(power))'''
-		enable_encoders()
-		set_speed(70)
-		enc_tgt(1,1,10)
-		while read_enc_status():
-			print "in reading encorder status"
-			left_rot()
+			i = random.randint(0,1)
+			if i == 0:		
+				enable_encoders()
+				set_speed(175)
+				enc_tgt(1,1,13)
+				while read_enc_status():
+					print "in reading encorder status"
+					left_rot()
+		else:
+				enable_encoders()
+				set_speed(175)
+				enc_tgt(1,1,13)
+				while read_enc_status():
+					print "in reading encorder status"
+					left_rot()
 		stop()		
 		disable_encoders()	
 	else:
