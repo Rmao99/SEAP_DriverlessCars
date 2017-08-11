@@ -5,7 +5,7 @@ from picamera import PiCamera
 from LaneDetector import *
 from PIDController import *
 from gopigo import *
-#####
+
 import time
 import cv2
 import numpy as np
@@ -42,12 +42,12 @@ def DrivePIDSlow(difference,power):
 		diff =int(35+power*0.77)
 		print "Setting right to: ",diff
 		set_left_speed(diff)
-		set_right_speed(30)	
+		set_right_speed(35)	
 		fwd()		
 	elif difference < 0:
 		diff = int(35+power*0.77)
 		print "Setting left to:", diff
-		set_left_speed(30)
+		set_left_speed(35)
 		set_right_speed(diff)
 		fwd()
 
@@ -202,7 +202,7 @@ while(1):
 		ones = one_cascade.detectMultiScale(gray,1.2,5) #The two parameters are very important. The greater the scale factor (1.1 and 1.3), the smaller the image is when searching for your target. In this case, I did not scale down the one way sign detection as much because the sign would be too small to detect. Low min neighbors results in too many false positives, but too high results in not being able to detect your target
 		print "num of stops signs found",len(stops)
 		dist = None
-		if len(stops) > 0: #or len(ones) > 1:
+		if len(stops) > 0:
 			print "Found Stop"
 			stop()
 			time.sleep(3.0)			
@@ -222,7 +222,6 @@ while(1):
 				stops = stop_cascade.detectMultiScale(gray, 1.3, 5)
 				for (x,y,w,h) in stops:
 					print "found somethin"
-					#cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
 					width = w
 					stopDist = calcStopDistance(width)
 					print "DISTANCE",dist
@@ -235,37 +234,28 @@ while(1):
 			stop()
 			time.sleep(2.0)
 			
-			#i = random.randint(0,1)
-			#if i == 0:
-			driveEncoderCount(18)
-			enable_encoders()
-			set_speed(175)
-			enc_tgt(1,1,13)
-			while read_enc_status():
-				print "in reading encorder status"
-				left_rot()
-				time.sleep(2.0)
-			#elif i == 1:
-			#	driveEncoderCount(36)
+			i = random.randint(0,1)
+			if i == 0:
+				driveEncoderCount(18)
+				enable_encoders()
+				set_speed(175)
+				enc_tgt(1,1,13)
+				while read_enc_status():
+					print "in reading encorder status"
+					left_rot()
+			elif i == 1:
+				driveEncoderCount(36)
 			stop()		
 			disable_encoders()	
-			time.sleep(1.0)
+			time.sleep(2.0)
 			continue			 
 		elif len(ones) > 0: #If found a one way sign
 			print "Found One-------------------------------------------------------------------------"			
 			stop()
 			time.sleep(2.0)
 			ratio = None
-			#rightcnt = 0
-			#leftcnt = 0
-			#cnt = 0
-			#while cnt <7:
-			#frame = vs.read()	
-			#print "just read frame"
-			#gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-			#ones = one_cascade.detectMultiScale(gray,1.2,5)	
+			
 			for (x,y,w,h) in ones:
-			#	cnt+=1
 				width = w
 				oneDist = calcOneDistance(width)
 			while oneDist > 16:
@@ -274,8 +264,6 @@ while(1):
 				gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 				ones = one_cascade.detectMultiScale(gray, 1.2, 5)
 				for (x,y,w,h) in ones:
-					print "found somethin"
-					#cv2.rectangle(frame,(x,y),(x+w,y+h),(255,255,0),2)
 					width = w
 					oneDist = calcOneDistance(width)
 					print "DISTANCE",dist
@@ -299,28 +287,25 @@ while(1):
 				if ratio is None:
 					print "no ratio val foudn"
 					continue
-				'''if ratio <= 0.38: #sign is pointing right if the ratio is less than this value
-					rightcnt += 1
-				elif ratio > 0.42: #Sign is pointing right if the ratio is greater than this value
-					rightcnt +=1'''
+				
 			print "RATIO:------------------",ratio
 			time.sleep(2.0)
 			if ratio > 0.395: #sign is pointing to the left 
-				driveEncoderCountSlow(34)
+				driveEncoderCountSlow(32)
 				stop()
 				time.sleep(2.0)
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,15)
+				enc_tgt(1,1,16)
 				while read_enc_status():
 					right_rot() #turn left
 			elif ratio <= 0.395: #sign is pointing to the right 
-				driveEncoderCountSlow(34)
+				driveEncoderCountSlow(32)
 				stop()
 				time.sleep(2.0)
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,15)
+				enc_tgt(1,1,16)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()			
@@ -337,36 +322,14 @@ while(1):
 			difference = width-avg
 			power = PIDController.compute(width,avg)
 			DrivePID(difference,abs(power))
-	elif x1 is None and x2 is not None:
-		print "No left lane, time to turn"		
+	elif x1 is None and x2 is not None: #MISSING LEFT LANE
+		print "No left lane, time to turn_________________________________"		
 		stop()		
 		time.sleep(2.0)
 
 		enable_encoders()
 		driveEncoderCount(38)		
-		'''enc_tgt(1,1,38)
 		
-		while read_enc_status():
-			frame = vs.read()
-			frame = imutils.resize(frame,width=320)	
-			detector.process(frame)
-			x1 = detector.get_x1()
-			x2 = detector.get_x2()
-			print x2
-			if x2 is None:
-				stop()
-				time.sleep(1.0)
-				disable_encoders()
-				enable_encoders()
-				enc_tgt(1,1,16)
-				while read_enc_status():
-					fwd()
-				disable_encoders()
-				break
-			drive
-			difference = 380-x2 #274 is x coord or approximate center
-			power = PIDController.compute(380,x2)
-			DrivePID(difference,abs(power))'''
 		stop()
 		disable_encoders()
 
@@ -377,55 +340,32 @@ while(1):
 		x1 = detector.get_x1()
 		x2 = detector.get_x2()
 
-		if x1 is not None and x2 is not None:
+		if x1 is not None and x2 is not None: #IF LANES REAPPEAR
 			driveEncoderCount(19)
-			#i = random.randint(0,1)
-			#if i == 1:		
-			enable_encoders()
-			set_speed(175)
-			enc_tgt(1,1,18)
-			while read_enc_status():
-				print "in reading encorder status"
-				right_rot()
-			time.sleep(2.0)
+			i = random.randint(0,1)
+			if i == 0:	
+				enable_encoders()
+				set_speed(175)
+				enc_tgt(1,1,17)
+				while read_enc_status():
+					print "in reading encorder status"
+					right_rot()
 		else:
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,15)
+				enc_tgt(1,1,16)
 				while read_enc_status():
 					print "in reading encorder status"
 					right_rot()
 		stop()		
 		disable_encoders()
-		time.sleep(1.0)	
-	elif x2 is None and x1 is not None:
+		time.sleep(2.0)	
+	elif x2 is None and x1 is not None: #MISSING RIGHT LANE
 		print "No right lane, time to turn"	
 		stop()		
 		time.sleep(2.0)
 		driveEncoderCount(38)
-		'''enable_encoders()
-		enc_tgt(1,1,38)
-		while read_enc_status():
-			frame = vs.read()
-			frame = imutils.resize(frame,width=320)	
-			detector.process(frame)
-			x1 = detector.get_x1()
-			x2 = detector.get_x2()
-			print x2
-			if x1 is None:
-				stop()
-				time.sleep(1.0)
-				disable_encoders()
-				enable_encoders()
-				enc_tgt(1,1,16)
-				while read_enc_status():
-					fwd()
-				disable_encoders()
-				break	
-
-			difference = -35-x1 #274 is x coord or approximate center
-			power = PIDController.compute(-35,x1)
-			DrivePID(difference,abs(power))'''
+		
 		stop()
 		disable_encoders()
 
@@ -436,7 +376,7 @@ while(1):
 		x1 = detector.get_x1()
 		x2 = detector.get_x2()
 
-		if x1 is not None and x2 is not None:
+		if x1 is not None and x2 is not None: #IF LANES REAPPEAR
 			i = random.randint(0,1)
 			if i == 0:		
 				enable_encoders()
@@ -448,7 +388,7 @@ while(1):
 		else:
 				enable_encoders()
 				set_speed(175)
-				enc_tgt(1,1,15)
+				enc_tgt(1,1,16)
 				while read_enc_status():
 					print "in reading encorder status"
 					left_rot()
